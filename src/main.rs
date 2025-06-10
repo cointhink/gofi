@@ -15,14 +15,36 @@ fn main() -> Result<(), postgres::Error> {
         let pool_contract_address_1: &str = row.get(1);
         let pool_block_0: &str = row.get(2);
         let pool_block_1: &str = row.get(3);
+        let reserves_0 = reserves_for(&mut db, pool_contract_address_0);
+        let reserves_1 = reserves_for(&mut db, pool_contract_address_1);
+        let oay_in_fwd = optimal_ay_in(reserves_0.0, reserves_0.1, reserves_1.0, reserves_1.1);
+        let oay_in_rev = optimal_ay_in(reserves_1.0, reserves_1.1, reserves_0.0, reserves_0.1);
 
         println!(
-            "pool pair {} #{} {} #{}",
-            pool_contract_address_0, pool_block_0, pool_contract_address_1, pool_block_1
+            "pool pair {} #{} x:{} {} #{} x:{} oay_in:{} oay_in_rev:{}",
+            pool_contract_address_0,
+            pool_block_0,
+            reserves_0.0,
+            pool_contract_address_1,
+            pool_block_1,
+            reserves_1.0,
+            oay_in_fwd,
+            oay_in_rev
         );
     }
 
     Ok(())
+}
+
+fn reserves_for(db: &mut postgres::Client, token: &str) -> (u128, u128, i32) {
+    let sql = "SELECT x,y,block_number from reserves where contract_address = $1 order by block_number desc limit 1";
+    let rows = db.query(sql, &[&token]).unwrap();
+    let digits_x: &str = rows[0].get::<_, &str>("x");
+    let digits_y: &str = rows[0].get::<_, &str>("y");
+    let block_number = rows[0].get::<_, i32>("block_number");
+    let x = u128::from_str_radix(digits_x, 10).unwrap();
+    let y = u128::from_str_radix(digits_y, 10).unwrap();
+    (x, y, block_number)
 }
 
 fn pairs_with(
@@ -46,4 +68,23 @@ fn pairs_with(
               ORDER BY value desc";
 
     db.query(sql, &[&base_token])
+}
+
+pub fn optimal_ay_in(ax: u128, ay: u128, bx: u128, by: u128) -> f64 {
+    const POOL_FEE: f64 = 1.0 - 0.003;
+    let k = POOL_FEE * bx as f64 + POOL_FEE.powi(2) * ax as f64;
+    let a = k.powi(2);
+    let b = 2.0 * k * ay as f64 * bx as f64;
+    let c = (ay as f64 * bx as f64).powi(2)
+        - POOL_FEE.powi(2) * ax as f64 * bx as f64 * ay as f64 * by as f64;
+    quadratic_root(a, b, c)
+}
+
+pub fn quadratic_root(a: f64, b: f64, c: f64) -> f64 {
+    let d = b.powi(2) - 4.0 * a * c;
+    if d > 0.0 {
+        return (-b + d.sqrt()) / (2.0 * a);
+    } else {
+        return 0.0;
+    }
 }
