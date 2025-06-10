@@ -8,8 +8,27 @@ fn main() -> Result<(), postgres::Error> {
         .unwrap();
 
     let config = config::CONFIG.get().unwrap();
-    let mut client = Client::connect(&config.pg_url, NoTls)?;
+    let mut db = Client::connect(&config.pg_url, NoTls)?;
 
+    for row in pairs_with(&mut db, "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")? {
+        let pool_contract_address_0: &str = row.get(0);
+        let pool_contract_address_1: &str = row.get(1);
+        let pool_block_0: &str = row.get(2);
+        let pool_block_1: &str = row.get(3);
+
+        println!(
+            "pool pair {} #{} {} #{}",
+            pool_contract_address_0, pool_block_0, pool_contract_address_1, pool_block_1
+        );
+    }
+
+    Ok(())
+}
+
+fn pairs_with(
+    db: &mut postgres::Client,
+    base_token: &str,
+) -> Result<Vec<postgres::Row>, postgres::Error> {
     let sql = "WITH latest_reserves AS
               (SELECT contract_address, block_number, x,y, ROW_NUMBER() OVER(PARTITION BY contract_address ORDER BY block_number)
                 FROM reserves ORDER BY contract_address, block_number)
@@ -26,20 +45,5 @@ fn main() -> Result<(), postgres::Error> {
               JOIN latest_reserves AS lrp2 ON p2.contract_address = lrp2.contract_address AND lrp2.row_number = 1
               ORDER BY value desc";
 
-    for row in client.query(
-        sql,
-        &[&"c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2".to_string()],
-    )? {
-        let pool_contract_address_0: &str = row.get(0);
-        let pool_contract_address_1: &str = row.get(1);
-        let pool_block_0: &str = row.get(2);
-        let pool_block_1: &str = row.get(3);
-
-        println!(
-            "pool pair {} #{} {} #{}",
-            pool_contract_address_0, pool_block_0, pool_contract_address_1, pool_block_1
-        );
-    }
-
-    Ok(())
+    db.query(sql, &[&base_token])
 }
