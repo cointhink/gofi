@@ -12,7 +12,7 @@ fn main() -> Result<(), postgres::Error> {
 
     let rows = pairs_with(&mut db, "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")?;
     println!("{} rows", rows.len());
-    
+
     for row in rows {
         let pool_contract_address_0: &str = row.get(0);
         let pool_contract_address_1: &str = row.get(1);
@@ -21,19 +21,19 @@ fn main() -> Result<(), postgres::Error> {
         let reserves_0 = reserves_for(&mut db, pool_contract_address_0);
         let reserves_1 = reserves_for(&mut db, pool_contract_address_1);
         let oay_in_fwd = optimal_ay_in(reserves_0.0, reserves_0.1, reserves_1.0, reserves_1.1);
-        let oay_in_rev = optimal_ay_in(reserves_1.0, reserves_1.1, reserves_0.0, reserves_0.1);
 
-        println!(
-            "pool pair {} #{} x:{} {} #{} x:{} oay_in:{} oay_in_rev:{}",
-            pool_contract_address_0,
-            pool_block_0,
-            reserves_0.0,
-            pool_contract_address_1,
-            pool_block_1,
-            reserves_1.0,
-            oay_in_fwd,
-            oay_in_rev
-        );
+        if oay_in_fwd > 0.0 {
+            println!(
+                "{} pool pair {} #{} x:{} {} #{} x:{}",
+                oay_in_fwd,
+                pool_contract_address_0,
+                pool_block_0,
+                reserves_0.0,
+                pool_contract_address_1,
+                pool_block_1,
+                reserves_1.0,
+            );
+        }
     }
 
     Ok(())
