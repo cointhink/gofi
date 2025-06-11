@@ -23,8 +23,8 @@ fn main() -> Result<(), postgres::Error> {
         let pool_0 = pool(&mut db, pool_contract_address_0);
         let coin_ay = coin(&mut db, &pool_0.2);
         let pool_1 = pool(&mut db, pool_contract_address_1);
-        let reserves_0 = reserves_for(&mut db, pool_contract_address_0);
-        let reserves_1 = reserves_for(&mut db, pool_contract_address_1);
+        let reserves_0 = reserves_for(&mut db, pool_contract_address_0, pool_block_0);
+        let reserves_1 = reserves_for(&mut db, pool_contract_address_1, pool_block_1);
         let oay_in_fwd = optimal_ay_in(reserves_0.0, reserves_0.1, reserves_1.0, reserves_1.1);
 
         if oay_in_fwd > 0.0 {
@@ -64,12 +64,13 @@ fn coin(db: &mut postgres::Client, contract_address: &str) -> (String, String, i
     (contract_address_row, symbol, decimals)
 }
 
-fn reserves_for(db: &mut postgres::Client, token: &str) -> (u128, u128, i32) {
-    let sql = "SELECT x,y,block_number from reserves where contract_address = $1 order by block_number desc limit 1";
-    let rows = db.query(sql, &[&token]).unwrap();
-    let digits_x: &str = rows[0].get::<_, &str>("x");
-    let digits_y: &str = rows[0].get::<_, &str>("y");
-    let block_number = rows[0].get::<_, i32>("block_number");
+fn reserves_for(db: &mut postgres::Client, token: &str, block_number: i32) -> (u128, u128, i32) {
+    let sql = "SELECT * from reserves where contract_address = $1 and block_number = $2 order by block_number desc limit 1";
+    let rows = db.query(sql, &[&token, &block_number]).unwrap();
+    let row = &rows[0];
+    let digits_x: &str = row.get::<_, &str>("x");
+    let digits_y: &str = row.get::<_, &str>("y");
+    let block_number = row.get::<_, i32>("block_number");
     let x = u128::from_str_radix(digits_x, 10).unwrap();
     let y = u128::from_str_radix(digits_y, 10).unwrap();
     (x, y, block_number)
