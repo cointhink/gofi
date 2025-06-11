@@ -2,6 +2,8 @@ use postgres::{Client, NoTls};
 
 mod config;
 
+const WETH: &str = "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+
 fn main() -> Result<(), postgres::Error> {
     config::CONFIG
         .set(config::read_type(config::FILENAME))
@@ -10,14 +12,14 @@ fn main() -> Result<(), postgres::Error> {
     let config = config::CONFIG.get().unwrap();
     let mut db = Client::connect(&config.pg_url, NoTls)?;
 
-    let rows = pairs_with(&mut db, "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")?;
+    let rows = pairs_with(&mut db, WETH)?;
     println!("{} rows", rows.len());
 
     for row in rows {
-        let pool_contract_address_0: &str = row.get(0);
-        let pool_contract_address_1: &str = row.get(1);
-        let pool_block_0: &str = row.get(2);
-        let pool_block_1: &str = row.get(3);
+        let pool_contract_address_0: &str = row.get("p1_contract_address");
+        let pool_contract_address_1: &str = row.get("p2_contract_address");
+        let pool_block_0: i32 = row.get("p1_block_number");
+        let pool_block_1: i32 = row.get("p2_block_number");
         let pool_0 = pool(&mut db, pool_contract_address_0);
         let coin_ay = coin(&mut db, &pool_0.2);
         let pool_1 = pool(&mut db, pool_contract_address_1);
@@ -27,9 +29,9 @@ fn main() -> Result<(), postgres::Error> {
 
         if oay_in_fwd > 0.0 {
             println!(
-                "{}{} pool pair {} #{} x:{} {} #{} x:{}",
-                oay_in_fwd/ 10_f64.powi(coin_ay.2),
-		coin_ay.1,
+                "{:0.4}{} pool pair {} #{} x:{} {} #{} x:{}",
+                oay_in_fwd / 10_f64.powi(coin_ay.2),
+                coin_ay.1,
                 pool_contract_address_0,
                 pool_block_0,
                 reserves_0.0,
