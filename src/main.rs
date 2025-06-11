@@ -11,6 +11,7 @@ fn main() -> Result<(), postgres::Error> {
 
     let config = config::CONFIG.get().unwrap();
     let mut db = Client::connect(&config.pg_url, NoTls)?;
+    println!("gofi {} eth 0x{}", config::FILENAME, config.public_key());
 
     let pools_count = rows_count(&mut db, "pools");
     let pairs = pairs_with(&mut db, WETH)?;
