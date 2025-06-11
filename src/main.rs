@@ -10,7 +10,10 @@ fn main() -> Result<(), postgres::Error> {
     let config = config::CONFIG.get().unwrap();
     let mut db = Client::connect(&config.pg_url, NoTls)?;
 
-    for row in pairs_with(&mut db, "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")? {
+    let rows = pairs_with(&mut db, "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")?;
+    println!("{} rows", rows.len());
+    
+    for row in rows {
         let pool_contract_address_0: &str = row.get(0);
         let pool_contract_address_1: &str = row.get(1);
         let pool_block_0: &str = row.get(2);
