@@ -18,14 +18,18 @@ fn main() -> Result<(), postgres::Error> {
         let pool_contract_address_1: &str = row.get(1);
         let pool_block_0: &str = row.get(2);
         let pool_block_1: &str = row.get(3);
+        let pool_0 = pool(&mut db, pool_contract_address_0);
+        let coin_ay = coin(&mut db, &pool_0.2);
+        let pool_1 = pool(&mut db, pool_contract_address_1);
         let reserves_0 = reserves_for(&mut db, pool_contract_address_0);
         let reserves_1 = reserves_for(&mut db, pool_contract_address_1);
         let oay_in_fwd = optimal_ay_in(reserves_0.0, reserves_0.1, reserves_1.0, reserves_1.1);
 
         if oay_in_fwd > 0.0 {
             println!(
-                "{} pool pair {} #{} x:{} {} #{} x:{}",
-                oay_in_fwd,
+                "{}{} pool pair {} #{} x:{} {} #{} x:{}",
+                oay_in_fwd/ 10_f64.powi(coin_ay.2),
+		coin_ay.1,
                 pool_contract_address_0,
                 pool_block_0,
                 reserves_0.0,
@@ -37,6 +41,25 @@ fn main() -> Result<(), postgres::Error> {
     }
 
     Ok(())
+}
+
+fn pool(db: &mut postgres::Client, contract_address: &str) -> (String, String, String) {
+    let sql = "SELECT * from pools where contract_address = $1";
+    let rows = db.query(sql, &[&contract_address]).unwrap();
+    let contract_address_row = rows[0].get::<_, String>("contract_address");
+    let token0 = rows[0].get::<_, String>("token0");
+    let token1 = rows[0].get::<_, String>("token1");
+
+    (contract_address_row, token0, token1)
+}
+
+fn coin(db: &mut postgres::Client, contract_address: &str) -> (String, String, i32) {
+    let sql = "SELECT * from coins where contract_address = $1";
+    let rows = db.query(sql, &[&contract_address]).unwrap();
+    let contract_address_row = rows[0].get::<_, String>("contract_address");
+    let symbol = rows[0].get::<_, String>("symbol");
+    let decimals = rows[0].get::<_, i32>("decimals");
+    (contract_address_row, symbol, decimals)
 }
 
 fn reserves_for(db: &mut postgres::Client, token: &str) -> (u128, u128, i32) {
