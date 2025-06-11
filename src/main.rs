@@ -25,12 +25,21 @@ fn main() -> Result<(), postgres::Error> {
         let pool_1 = pool(&mut db, pool_contract_address_1);
         let reserves_0 = reserves_for(&mut db, pool_contract_address_0, pool_block_0);
         let reserves_1 = reserves_for(&mut db, pool_contract_address_1, pool_block_1);
-        let oay_in_fwd = optimal_ay_in(reserves_0.0, reserves_0.1, reserves_1.0, reserves_1.1);
 
-        if oay_in_fwd > 0.0 {
+        // f(b) - f(a) == 0
+        let oay_in = optimal_ay_in(reserves_0.0, reserves_0.1, reserves_1.0, reserves_1.1);
+
+        if oay_in > 0.0 {
+            // trade simulation
+            let s1_adx = get_y_out(oay_in as u128, reserves_0.1, reserves_0.0);
+            let s2_ady = get_y_out(s1_adx, reserves_1.0, reserves_1.1);
+            let profit = s2_ady - oay_in as u128;
+
             println!(
-                "{:0.4}{} pool pair {} #{} x:{} {} #{} x:{}",
-                oay_in_fwd / 10_f64.powi(coin_ay.2),
+                "{:0.4}{} {:0.4}{} pool pair {} #{} x:{} {} #{} x:{}",
+                oay_in / 10_f64.powi(coin_ay.2),
+                coin_ay.1,
+                profit / 10_u128.pow(coin_ay.2 as u32),
                 coin_ay.1,
                 pool_contract_address_0,
                 pool_block_0,
@@ -116,4 +125,8 @@ pub fn quadratic_root(a: f64, b: f64, c: f64) -> f64 {
     } else {
         return 0.0;
     }
+}
+
+pub fn get_y_out(dx: u128, x: u128, y: u128) -> u128 {
+    (997 * dx * y) / (1000 * x + 997 * dx)
 }
