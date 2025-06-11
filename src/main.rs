@@ -12,17 +12,23 @@ fn main() -> Result<(), postgres::Error> {
     let config = config::CONFIG.get().unwrap();
     let mut db = Client::connect(&config.pg_url, NoTls)?;
 
-    let rows = pairs_with(&mut db, WETH)?;
-    println!("{} rows", rows.len());
+    let pools_count = rows_count(&mut db, "pools");
+    let pairs = pairs_with(&mut db, WETH)?;
+    println!(
+        "{} pools make {} pairs for {}",
+        pools_count,
+        pairs.len(),
+        WETH
+    );
 
-    for row in rows {
+    for row in pairs {
         let pool_contract_address_0: &str = row.get("p1_contract_address");
         let pool_contract_address_1: &str = row.get("p2_contract_address");
         let pool_block_0: i32 = row.get("p1_block_number");
         let pool_block_1: i32 = row.get("p2_block_number");
         let pool_0 = pool(&mut db, pool_contract_address_0);
         let coin_ay = coin(&mut db, &pool_0.2);
-        let pool_1 = pool(&mut db, pool_contract_address_1);
+        // let pool_1 = pool(&mut db, pool_contract_address_1);
         let reserves_0 = reserves_for(&mut db, pool_contract_address_0, pool_block_0);
         let reserves_1 = reserves_for(&mut db, pool_contract_address_1, pool_block_1);
 
@@ -71,6 +77,12 @@ fn coin(db: &mut postgres::Client, contract_address: &str) -> (String, String, i
     let symbol = rows[0].get::<_, String>("symbol");
     let decimals = rows[0].get::<_, i32>("decimals");
     (contract_address_row, symbol, decimals)
+}
+
+fn rows_count(db: &mut postgres::Client, table_name: &str) -> i64 {
+    let sql = format!("SELECT count(*) from {}", table_name);
+    let rows = db.query(&sql, &[]).unwrap();
+    rows[0].get::<_, i64>("count")
 }
 
 fn reserves_for(db: &mut postgres::Client, token: &str, block_number: i32) -> (u128, u128, i32) {
