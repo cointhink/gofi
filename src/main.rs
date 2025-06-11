@@ -39,7 +39,7 @@ fn main() -> Result<(), postgres::Error> {
                 "{:0.4}{} {:0.4}{} pool pair {} #{} x:{} {} #{} x:{}",
                 oay_in / 10_f64.powi(coin_ay.2),
                 coin_ay.1,
-                profit / 10_u128.pow(coin_ay.2 as u32),
+                profit as f64 / 10_f64.powi(coin_ay.2),
                 coin_ay.1,
                 pool_contract_address_0,
                 pool_block_0,
