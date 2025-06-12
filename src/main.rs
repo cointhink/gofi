@@ -4,6 +4,38 @@ mod config;
 
 const WETH: &str = "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
+struct PoolSnapshot {
+    contract_address: String,
+    reserve_x: u128,
+    reserve_y: u128,
+    reserve_block: usize,
+}
+
+struct Match {
+    pool0_snapshot: PoolSnapshot,
+    pool0_ay_in: u128,
+    pool1_snapshot: PoolSnapshot,
+    pool0_at_in: u128,
+}
+
+impl Match {
+    pub fn toString(self: &Self) -> String {
+        format!(
+            "{:0.4}{} {:0.4}{} pool pair {} #{} x:{} {} #{} x:{}",
+            self.pool0_ay_in / 10_f64.powi(coin_ay.2),
+            coin_ay.1,
+            profit as f64 / 10_f64.powi(coin_ay.2),
+            coin_ay.1,
+            pool_contract_address_0,
+            pool_block_0,
+            reserves_0.0,
+            pool_contract_address_1,
+            pool_block_1,
+            reserves_1.0,
+        )
+    }
+}
+
 fn main() -> Result<(), postgres::Error> {
     config::CONFIG
         .set(config::read_type(config::FILENAME))
@@ -22,6 +54,12 @@ fn main() -> Result<(), postgres::Error> {
         WETH
     );
 
+    let matches = matches(&mut db, pairs);
+
+    Ok(())
+}
+
+fn matches(mut db: &mut postgres::Client, pairs: Vec<postgres::Row>) -> Vec<Match> {
     for row in pairs {
         let pool_contract_address_0: &str = row.get("p1_contract_address");
         let pool_contract_address_1: &str = row.get("p2_contract_address");
@@ -41,26 +79,10 @@ fn main() -> Result<(), postgres::Error> {
             let s1_adx = get_y_out(oay_in as u128, reserves_0.1, reserves_0.0);
             let s2_ady = get_y_out(s1_adx, reserves_1.0, reserves_1.1);
             let profit = s2_ady - oay_in as u128;
-
-            println!(
-                "{:0.4}{} {:0.4}{} pool pair {} #{} x:{} {} #{} x:{}",
-                oay_in / 10_f64.powi(coin_ay.2),
-                coin_ay.1,
-                profit as f64 / 10_f64.powi(coin_ay.2),
-                coin_ay.1,
-                pool_contract_address_0,
-                pool_block_0,
-                reserves_0.0,
-                pool_contract_address_1,
-                pool_block_1,
-                reserves_1.0,
-            );
         }
     }
-
-    Ok(())
+    vec![]
 }
-
 fn pool(db: &mut postgres::Client, contract_address: &str) -> (String, String, String) {
     let sql = "SELECT * from pools where contract_address = $1";
     let rows = db.query(sql, &[&contract_address]).unwrap();
