@@ -125,19 +125,23 @@ fn main() -> Result<(), postgres::Error> {
 
     let pools_count = rows_count(&mut db, "pools");
     let pairs = pairs_with(&mut db, WETH)?;
+    let matches = matches(&mut db, &pairs);
     println!(
-        "{} pools make {} pairs for {}",
+        "{} pools make {} pairs and {} matches for {}",
         pools_count,
         pairs.len(),
+        matches.len(),
         WETH
     );
 
-    let matches = matches(&mut db, pairs);
+    for r#match in matches {
+        println!("{}", r#match.to_string())
+    }
 
     Ok(())
 }
 
-fn matches(mut db: &mut postgres::Client, pairs: Vec<postgres::Row>) -> Vec<Match> {
+fn matches(mut db: &mut postgres::Client, pairs: &Vec<postgres::Row>) -> Vec<Match> {
     let mut matches = vec![];
     for row in pairs {
         let pair = Pair::from_pair_row(db, &row);
