@@ -19,12 +19,12 @@ struct Pool {
 impl Pool {
     pub fn from_pair_row(db: &mut postgres::Client, row: &postgres::Row, pool_digit: &str) -> Pool {
         let pool_contract_address_0: &str = row.get(sql_field!("p{}_contract_address", pool_digit));
-        let pool0_token0: &str = row.get(sql_field!("p{}_token0", pool_digit));
-        let pool0_token1: &str = row.get(sql_field!("p{}_token1", pool_digit));
+        let pool_token0: &str = row.get(sql_field!("p{}_token0", pool_digit));
+        let pool_token1: &str = row.get(sql_field!("p{}_token1", pool_digit));
         Pool {
             contract_address: pool_contract_address_0.to_owned(),
-            coin0: coin(db, pool0_token0),
-            coin1: coin(db, pool0_token1),
+            coin0: coin(db, pool_token0),
+            coin1: coin(db, pool_token1),
         }
     }
 }
@@ -105,12 +105,12 @@ impl Match {
             self.pair.pool0.reserve.x,
             self.pair.pool1.pool.contract_address,
             self.pair.pool1.reserve.block,
-            self.pair.pool0.reserve.x,
+            self.pair.pool1.reserve.x,
         )
     }
 
     pub fn profit(self: &Self) -> u128 {
-        self.pool1_ay_out - self.pool0_ay_in as u128
+        self.pool1_ay_out - self.pool0_ay_in
     }
 }
 
