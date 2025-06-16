@@ -95,8 +95,9 @@ struct Match {
 impl Match {
     pub fn to_string(self: &Self) -> String {
         format!(
-            "{} {:0.4}{} {:0.4}{} pool pair {} #{} x:{} {} #{} x:{}",
+            "{} dec{} {:0.4}{} profit:{:0.4}{} pool pair {} #{} x:{} {} #{} x:{}",
             self.pool0_ay_in,
+            self.pair.pool0.pool.coin1.decimals,
             self.pool0_ay_in as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
             self.pair.pool0.pool.coin1.symbol,
             self.profit() as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
