@@ -46,7 +46,7 @@ fn main() -> Result<(), postgres::Error> {
     let winner = matches
         .iter()
         .find(|m| {
-            m.pair.pool0.pool.coin0.contract_address == USDT && m.profit() > 1 && m.profit() < 2
+            m.pair.pool0.pool.coin1.contract_address == USDT && m.profit() > 1 && m.profit() < 2
         })
         .unwrap_or_else(|| panic!("no winner found"));
 
