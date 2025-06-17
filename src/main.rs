@@ -11,7 +11,7 @@ use postgres::{Client, NoTls};
 mod config;
 
 const WETH: &str = "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-const USDT: &str = "dAC17F958D2ee523a2206206994597C13D831ec7";
+const USDT: &str = "dac17f958d2ee523a2206206994597c13d831ec7";
 
 macro_rules! sql_field {
     ($name:expr, $digit:expr) => {
@@ -46,13 +46,6 @@ fn main() -> Result<(), postgres::Error> {
     let winner = matches
         .iter()
         .find(|m| {
-            println!(
-                "{} == {} profit {} >1 <2",
-                m.pair.pool0.pool.coin1.contract_address,
-                USDT,
-                m.profit()
-            );
-
             m.pair.pool0.pool.coin1.contract_address == USDT && m.profit() > 1 && m.profit() < 2
         })
         .unwrap_or_else(|| panic!("no winner found"));
