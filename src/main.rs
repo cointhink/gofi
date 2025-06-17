@@ -226,10 +226,10 @@ fn pairs_with(
                 FROM reserves ORDER BY contract_address, block_number)
               SELECT p1.contract_address as p1_contract_address,
                      p1.token0 as p1_token0,
-                     p1.token0 as p1_token1,
+                     p1.token1 as p1_token1,
                      p2.contract_address as p2_contract_address,
                      p2.token0 as p2_token0,
-                     p2.token0 as p2_token1,
+                     p2.token1 as p2_token1,
                      lrp1.x as qty_x1, lrp2.x AS qty_x2, lrp1.block_number AS p1_block_number,
                      lrp1.y as qty_y1, lrp2.y AS qty_y2, lrp2.block_number AS p2_block_number,
                      ABS((lrp1.x::decimal/lrp1.y::decimal) - (lrp2.x::decimal/lrp2.y::decimal))::float8 as spread,
