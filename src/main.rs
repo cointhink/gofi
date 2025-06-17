@@ -1,3 +1,11 @@
+#![allow(dead_code)]
+use std::collections::HashMap;
+
+use alloy::{
+    consensus::Block,
+    rpc::client::{ClientBuilder, ReqwestClient},
+    transports::http::reqwest::Url,
+};
 use postgres::{Client, NoTls};
 
 mod config;
@@ -8,6 +16,67 @@ macro_rules! sql_field {
     ($name:expr, $digit:expr) => {
         format!($name, $digit).as_str()
     };
+}
+
+fn main() -> Result<(), postgres::Error> {
+    config::CONFIG
+        .set(config::read_type(config::FILENAME))
+        .unwrap();
+
+    let config = config::CONFIG.get().unwrap();
+    let mut db = Client::connect(&config.pg_url, NoTls)?;
+    println!("gofi {} eth 0x{}", config::FILENAME, config.public_key());
+
+    let pools_count = rows_count(&mut db, "pools");
+    let pairs = pairs_with(&mut db, WETH)?;
+    let matches = matches(&mut db, &pairs);
+    println!(
+        "{} pools make {} pairs and {} matches for {}",
+        pools_count,
+        pairs.len(),
+        matches.len(),
+        WETH
+    );
+
+    for r#match in &matches {
+        println!("{}", r#match.to_string())
+    }
+
+    let winner = matches
+        .iter()
+        .find(|m| m.profit() < 2)
+        .unwrap_or_else(|| panic!("no winner found"));
+
+    execute(winner);
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn execute(winner: &Match) {
+    let config = config::CONFIG.get().unwrap();
+
+    println!("winner: {}", winner.to_string());
+    // is account approved for pool 0
+    uni_approved(
+        &config.public_key(),
+        &winner.pair.pool0.pool.contract_address,
+    );
+    // Instantiate a new client over a transport.
+    let client: ReqwestClient =
+        ClientBuilder::default().http(Url::parse(&config.geth_url).unwrap());
+
+    // Prepare a request to the server.
+    let request = client.request_noparams("eth_blockNumber");
+
+    // Poll the request to completion.
+    let block_number: u32 = request.await.unwrap();
+    println!("eth_blockNumber: {}", block_number);
+}
+
+fn uni_approved(public_key: &str, contract_address: &str) -> bool {
+    let mut uq = HashMap::<String, String>::default();
+    false
 }
 
 struct Pool {
@@ -114,34 +183,7 @@ impl Match {
     }
 }
 
-fn main() -> Result<(), postgres::Error> {
-    config::CONFIG
-        .set(config::read_type(config::FILENAME))
-        .unwrap();
-
-    let config = config::CONFIG.get().unwrap();
-    let mut db = Client::connect(&config.pg_url, NoTls)?;
-    println!("gofi {} eth 0x{}", config::FILENAME, config.public_key());
-
-    let pools_count = rows_count(&mut db, "pools");
-    let pairs = pairs_with(&mut db, WETH)?;
-    let matches = matches(&mut db, &pairs);
-    println!(
-        "{} pools make {} pairs and {} matches for {}",
-        pools_count,
-        pairs.len(),
-        matches.len(),
-        WETH
-    );
-
-    for r#match in matches {
-        println!("{}", r#match.to_string())
-    }
-
-    Ok(())
-}
-
-fn matches(mut db: &mut postgres::Client, pairs: &Vec<postgres::Row>) -> Vec<Match> {
+fn matches(db: &mut postgres::Client, pairs: &Vec<postgres::Row>) -> Vec<Match> {
     let mut matches = vec![];
     for row in pairs {
         let pair = Pair::from_pair_row(db, &row);
@@ -170,6 +212,7 @@ fn matches(mut db: &mut postgres::Client, pairs: &Vec<postgres::Row>) -> Vec<Mat
     }
     matches
 }
+
 fn pool(db: &mut postgres::Client, contract_address_in: &str) -> Pool {
     let sql = "SELECT * from pools where contract_address = $1";
     let rows = db.query(sql, &[&contract_address_in]).unwrap();
