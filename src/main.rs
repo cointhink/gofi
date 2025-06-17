@@ -11,7 +11,7 @@ use postgres::{Client, NoTls};
 mod config;
 
 const WETH: &str = "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-const USDT: &str = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+const USDT: &str = "dAC17F958D2ee523a2206206994597C13D831ec7";
 
 macro_rules! sql_field {
     ($name:expr, $digit:expr) => {
@@ -40,7 +40,7 @@ fn main() -> Result<(), postgres::Error> {
     );
 
     for r#match in &matches {
-        println!("{}", r#match.to_string())
+        // println!("{}", r#match.to_string())
     }
 
     let winner = matches
