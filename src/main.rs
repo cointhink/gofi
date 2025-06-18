@@ -2,8 +2,9 @@
 use std::collections::HashMap;
 
 use alloy::{
-    consensus::Block,
+    providers::ProviderBuilder,
     rpc::client::{ClientBuilder, ReqwestClient},
+    sol,
     transports::http::reqwest::Url,
 };
 use postgres::{Client, NoTls};
@@ -53,31 +54,48 @@ fn main() -> Result<(), postgres::Error> {
         })
         .unwrap_or_else(|| panic!("no winner found"));
 
-    execute(winner);
+    maineth(winner);
 
     Ok(())
 }
 
 #[tokio::main]
-async fn execute(winner: &Match) {
+async fn maineth(winner: &Match) {
     let config = config::CONFIG.get().unwrap();
-
+    sol!(
+        #[sol(rpc)]
+        UniswapV2Pair,
+        "sol-abi/UniswapV2Pair.json"
+    );
     println!("winner: {}", winner.to_string());
     // is account approved for pool 0
     uni_approved(
         &config.public_key(),
         &winner.pair.pool0.pool.contract_address,
     );
+    let geth_url = Url::parse(&config.geth_url).unwrap();
+    //
     // Instantiate a new client over a transport.
-    let client: ReqwestClient =
-        ClientBuilder::default().http(Url::parse(&config.geth_url).unwrap());
+    let client: ReqwestClient = ClientBuilder::default().http(geth_url.clone());
+
+    let provider = ProviderBuilder::new().connect_http(geth_url.clone());
+    let contract = UniswapV2Pair::new(
+        winner.pair.pool0.pool.contract_address.parse().unwrap(),
+        provider,
+    );
+
+    let (r0, r1, btime) = contract.getReserves().call().await.unwrap().into();
+    println!(
+        "alloy contract call {}: r0: {} r1: {} btime: {}",
+        winner.pair.pool0.pool.contract_address, r0, r1, btime
+    );
 
     // Prepare a request to the server.
     let request = client.request_noparams("eth_blockNumber");
 
     // Poll the request to completion.
-    let block_number: u32 = request.await.unwrap();
-    println!("eth_blockNumber: {}", block_number);
+    let block_number_str: String = request.await.unwrap();
+    println!("eth_blockNumber: {}", block_number_str);
 }
 
 fn uni_approved(public_key: &str, contract_address: &str) -> bool {
