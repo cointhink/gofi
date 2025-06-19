@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 
 use alloy::{
+    hex::decode,
     primitives::{Address, Bytes, U256, bytes::Buf},
     providers::ProviderBuilder,
     rpc::client::{ClientBuilder, ReqwestClient},
@@ -89,16 +90,18 @@ async fn maineth(winner: &Match) {
     );
 
     println!(
-        "SWAP out0:{} out1:{} to: {}",
+        "SWAP out0:{} out1:{} to: {} -> in1: {}",
         winner.pool0_ax_out,
+        0,
+        config.public_key(),
         winner.pool0_ay_in,
-        config.public_key()
     );
     contract
         .swap(
+            U256::from(winner.pool0_ax_out),
             U256::from(0),
-            U256::from(winner.pool0_ay_in),
-            Address::from_slice(&config.public_key_bytes()),
+            // Address::from_slice(&config.public_key_bytes()),
+            Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
             Bytes::new(),
         )
         .call()
