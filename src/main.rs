@@ -2,7 +2,8 @@
 use std::collections::HashMap;
 
 use alloy::{
-    primitives::{U256, bytes::Buf},
+    hex::decode,
+    primitives::{Address, Bytes, U256, bytes::Buf},
     providers::ProviderBuilder,
     rpc::client::{ClientBuilder, ReqwestClient},
     sol,
@@ -42,7 +43,7 @@ fn main() -> Result<(), postgres::Error> {
     );
 
     for r#match in &matches {
-        println!("{}", r#match.to_string())
+        // println!("{}", r#match.to_string())
     }
 
     let winner = matches
@@ -75,9 +76,6 @@ async fn maineth(winner: &Match) {
         &winner.pair.pool0.pool.contract_address,
     );
     let geth_url = Url::parse(&config.geth_url).unwrap();
-    //
-    // Instantiate a new client over a transport.
-    let client: ReqwestClient = ClientBuilder::default().http(geth_url.clone());
 
     let provider = ProviderBuilder::new().connect_http(geth_url.clone());
     let contract = UniswapV2Pair::new(
@@ -87,11 +85,27 @@ async fn maineth(winner: &Match) {
 
     let (r0, r1, btime) = contract.getReserves().call().await.unwrap().into();
     println!(
-        "alloy contract call {}: r0: {} r1: {} btime: {}",
+        "fresh p0:{} r0: {} r1: {} btime: {}",
         winner.pair.pool0.pool.contract_address, r0, r1, btime
     );
 
+    println!(
+        "SWAP out0:{} out1:{} pool: {}",
+        winner.pool0_ax_out, winner.pool0_ay_in, winner.pair.pool0.pool.contract_address
+    );
+    contract
+        .swap(
+            U256::from(winner.pool0_ax_out),
+            U256::from(winner.pool0_ay_in),
+            Address::from_slice(&hex::decode(&winner.pair.pool0.pool.contract_address).unwrap()),
+            Bytes::new(),
+        )
+        .call()
+        .await
+        .unwrap();
+
     // Prepare a request to the server.
+    let client: ReqwestClient = ClientBuilder::default().http(geth_url.clone());
     let request = client.request_noparams("eth_blockNumber");
 
     // Poll the request to completion.
@@ -190,7 +204,7 @@ struct Match {
 impl Match {
     pub fn to_string(self: &Self) -> String {
         format!(
-            "{:0.4}{} profit:{:0.4}{} pool pair {} #{} x:{} {} #{} x:{}",
+            "{:0.4}{} profit:{:0.4}{} p0:{} #{} x:{} p1:{} #{} x:{}",
             self.pool0_ay_in as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
             self.pair.pool0.pool.coin1.symbol,
             self.profit() as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
