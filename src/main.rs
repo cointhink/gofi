@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 
 use alloy::{
+    primitives::{U256, bytes::Buf},
     providers::ProviderBuilder,
     rpc::client::{ClientBuilder, ReqwestClient},
     sol,
@@ -41,7 +42,7 @@ fn main() -> Result<(), postgres::Error> {
     );
 
     for r#match in &matches {
-        // println!("{}", r#match.to_string())
+        println!("{}", r#match.to_string())
     }
 
     let winner = matches
@@ -99,7 +100,8 @@ async fn maineth(winner: &Match) {
 }
 
 fn uni_approved(public_key: &str, contract_address: &str) -> bool {
-    let mut uq = HashMap::<String, String>::default();
+    let mut uq = HashMap::<&str, &str>::default();
+    uq.insert(public_key, contract_address);
     false
 }
 
@@ -329,5 +331,21 @@ pub fn quadratic_root(a: f64, b: f64, c: f64) -> f64 {
 }
 
 pub fn get_y_out(dx: u128, x: u128, y: u128) -> u128 {
-    (997 * dx * y) / (1000 * x + 997 * dx)
+    // (997 * dx * y) / (1000 * x + 997 * dx)
+    let big = (U256::from(997) * U256::from(dx) * U256::from(y))
+        / (U256::from(1000) * U256::from(x) + U256::from(997) * U256::from(dx));
+    big.as_le_slice().get_u128_le()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_y_out() {
+        let dx = 10;
+        let x = 100;
+        let y = 50;
+        assert_eq!(get_y_out(dx, x, y), 4)
+    }
 }
