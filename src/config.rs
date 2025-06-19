@@ -16,7 +16,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn public_key(&self) -> String {
+    pub fn public_key_bytes(&self) -> [u8; 20] {
         let secp = Secp256k1::new();
         let priv_key_bytes = hex::decode(&self.eth_priv_key).unwrap();
         let secret_key =
@@ -25,8 +25,11 @@ impl Config {
             PublicKey::from_secret_key(&secp, &secret_key).serialize_uncompressed();
         let mut hasher = sha3::Keccak256::new();
         hasher.update(&public_key[1..]);
-        let hashed = hasher.finalize()[12..32].to_vec();
-        hex::encode(hashed)
+        hasher.finalize()[12..32].try_into().unwrap()
+    }
+
+    pub fn public_key(&self) -> String {
+        hex::encode(self.public_key_bytes().to_vec())
     }
 }
 pub fn read_type<T>(filename: &str) -> T

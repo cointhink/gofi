@@ -2,7 +2,6 @@
 use std::collections::HashMap;
 
 use alloy::{
-    hex::decode,
     primitives::{Address, Bytes, U256, bytes::Buf},
     providers::ProviderBuilder,
     rpc::client::{ClientBuilder, ReqwestClient},
@@ -42,9 +41,9 @@ fn main() -> Result<(), postgres::Error> {
         WETH
     );
 
-    for r#match in &matches {
-        // println!("{}", r#match.to_string())
-    }
+    // for r#match in &matches {
+    //     println!("{}", r#match.to_string())
+    // }
 
     let winner = matches
         .iter()
@@ -90,14 +89,16 @@ async fn maineth(winner: &Match) {
     );
 
     println!(
-        "SWAP out0:{} out1:{} pool: {}",
-        winner.pool0_ax_out, winner.pool0_ay_in, winner.pair.pool0.pool.contract_address
+        "SWAP out0:{} out1:{} to: {}",
+        winner.pool0_ax_out,
+        winner.pool0_ay_in,
+        config.public_key()
     );
     contract
         .swap(
-            U256::from(winner.pool0_ax_out),
+            U256::from(0),
             U256::from(winner.pool0_ay_in),
-            Address::from_slice(&hex::decode(&winner.pair.pool0.pool.contract_address).unwrap()),
+            Address::from_slice(&config.public_key_bytes()),
             Bytes::new(),
         )
         .call()
@@ -204,7 +205,7 @@ struct Match {
 impl Match {
     pub fn to_string(self: &Self) -> String {
         format!(
-            "{:0.4}{} profit:{:0.4}{} p0:{} #{} x:{} p1:{} #{} x:{}",
+            "{:0.4}{} profit:{:0.4}{} p0:{} #{} x0: {} y0: {} p1:{} #{} x1: {} y1: {}",
             self.pool0_ay_in as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
             self.pair.pool0.pool.coin1.symbol,
             self.profit() as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
@@ -212,9 +213,11 @@ impl Match {
             self.pair.pool0.pool.contract_address,
             self.pair.pool0.reserve.block,
             self.pair.pool0.reserve.x,
+            self.pair.pool0.reserve.y,
             self.pair.pool1.pool.contract_address,
             self.pair.pool1.reserve.block,
             self.pair.pool1.reserve.x,
+            self.pair.pool1.reserve.y,
         )
     }
 
