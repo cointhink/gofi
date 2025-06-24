@@ -3,9 +3,10 @@ pragma solidity ^0.8.0;
 
 import "openzeppelin-contracts-5.3.0/contracts/token/ERC20/ERC20.sol";
 
-contract UsdCoin is ERC20 {
+contract UsDonA is ERC20 {
     address public owner;
-    constructor() ERC20("Eggplant", "EGGP") {
+
+    constructor() ERC20("US DON-A", "USDONA") {
         owner = msg.sender;
     }
 

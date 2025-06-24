@@ -1,4 +1,5 @@
 .PHONY: all dirs artifacts_dir contracts_dir contracts
+
 artifacts_dir := artifacts
 contracts_dir := contracts
 library_dir := library
@@ -8,8 +9,8 @@ all: dirs $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
 
 dirs: | $(artifacts_dir) $(library_dir)
 
-deploy:
-	eth contract:deploy -n hardhat --pk hat1  ./$(artifacts_dir)/UsdCoin.bin
+deploy: $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
+	./deploy.sh
 
 $(artifacts_dir)/%.bin: $(contracts_dir)/%.sol
 	solc --overwrite --abi --bin --base-path . --include-path library -o artifacts $<
