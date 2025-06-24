@@ -25,9 +25,12 @@ $(library_dir): $(library_dir)/v2-core-1.0.1
 	rm v5.3.0.tar.gz
 
 $(library_dir)/v2-core-1.0.1: 
-	wget https://github.com/Uniswap/v2-core/archive/refs/tags/v1.0.1.tar.gz
+	wget --quiet https://github.com/Uniswap/v2-core/archive/refs/tags/v1.0.1.tar.gz
 	tar xCf $(library_dir) v1.0.1.tar.gz
 	rm v1.0.1.tar.gz
-	./solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Pair.sol
-	./solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Factory.sol
+	mkdir bin
+	wget --quiet -O bin/solc-0.5.16 https://github.com/ethereum/solc-bin/raw/refs/heads/gh-pages/linux-amd64/solc-linux-amd64-v0.5.16+commit.9c3226ce
+	chmod 755 ./bin/solc-0.5.16
+	./bin/solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Pair.sol
+	./bin/solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Factory.sol
 
