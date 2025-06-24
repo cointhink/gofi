@@ -12,7 +12,7 @@ deploy:
 	eth contract:deploy -n hardhat --pk hat1  ./$(artifacts_dir)/UsdCoin.bin
 
 $(artifacts_dir)/%.bin: $(contracts_dir)/%.sol
-	solc --overwrite --bin --base-path . --include-path library -o artifacts $<
+	solc --overwrite --abi --bin --base-path . --include-path library -o artifacts $<
 
 $(artifacts_dir):
 	@mkdir -p $(artifacts_dir)
