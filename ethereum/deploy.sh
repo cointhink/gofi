@@ -18,11 +18,11 @@ eth contract:send --pk hat1 dpcoin@${USDONC} 'mint("'${owner}'", 1000000 )'
 FACTORY=$(eth contract:deploy -n hardhat --pk hat1 --abi uniswap-v2-factory --args [\"${owner}\"]  ./artifacts/UniswapV2Factory.bin | jq -r .address )
 echo uniswap v2 FACTORY ${FACTORY}
 
-# UNISWAP POOL deploy
+# UNISWAP A/C POOL #1 deploy
 #POOL=$(eth contract:deploy -n hardhat --pk hat1 ./artifacts/UniswapV2Pair.bin | jq -r .address )
 eth contract:send --pk hat1 uniswap-v2-factory@${FACTORY} 'createPair("'${USDONA}'","'${USDONC}'")' 
 POOL=$(eth contract:call uniswap-v2-factory@${FACTORY} 'getPair("'${USDONA}'","'${USDONC}'")' )
-echo uniswap v2 DEPLOYED ${POOL}
+echo uniswap v2 DEPLOYED A/C \#1 ${POOL}
 #echo uniswap v2 initialitze\(${USDONA}, ${USDONC}\)
 #eth contract:send --pk hat1 uniswap-v2-pair@${POOL} 'initialize("'${USDONA}'","'${USDONC}'")'
 
@@ -37,3 +37,13 @@ echo pool USDC balance `eth contract:call dpcoin@${USDONC} 'balanceOf("'${POOL}'
 echo pool mint to ${owner}
 eth contract:send --pk hat1 uniswap-v2-pair@${POOL} 'mint("'${owner}'")'
 eth contract:call uniswap-v2-pair@${POOL} 'getReserves()'
+
+# UNISWAP FACTORY #2 deploy
+FACTORY2=$(eth contract:deploy -n hardhat --pk hat1 --abi uniswap-v2-factory --args [\"${owner}\"]  ./artifacts/UniswapV2Factory.bin | jq -r .address )
+echo uniswap v2 FACTORY2 ${FACTORY2}
+
+# UNISWAP A/C POOL #2 deploy
+eth contract:send --pk hat1 uniswap-v2-factory@${FACTORY2} 'createPair("'${USDONA}'","'${USDONC}'")' 
+POOL2=$(eth contract:call uniswap-v2-factory@${FACTORY} 'getPair("'${USDONA}'","'${USDONC}'")' )
+echo uniswap v2 DEPLOYED A/C \#2 ${POOL2}
+
