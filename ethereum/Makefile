@@ -18,9 +18,16 @@ $(artifacts_dir)/%.bin: $(contracts_dir)/%.sol
 $(artifacts_dir):
 	@mkdir -p $(artifacts_dir)
 
-$(library_dir): 
+$(library_dir): $(library_dir)/v2-core-1.0.1
 	@mkdir -p $(library_dir)
 	wget https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v5.3.0.tar.gz
 	tar xCf $(library_dir) v5.3.0.tar.gz
 	rm v5.3.0.tar.gz
+
+$(library_dir)/v2-core-1.0.1: 
+	wget https://github.com/Uniswap/v2-core/archive/refs/tags/v1.0.1.tar.gz
+	tar xCf $(library_dir) v1.0.1.tar.gz
+	rm v1.0.1.tar.gz
+	./solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Pair.sol
+	./solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Factory.sol
 

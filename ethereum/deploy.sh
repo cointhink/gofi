@@ -9,24 +9,31 @@ USDONC=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/UsDonC.bin
 echo USDONC: ${USDONC} 
 echo updating abi in eth-cli
 eth abi:update dpcoin ./${artifacts_dir}/UsDonA.abi  
-echo minting  100 USDONA@${USDONA} to owner
-eth contract:send --pk hat1 dpcoin@${USDONA} 'mint("'${owner}'", 100 )'
-echo minting 1000 USDONC@${USDONC} to owner
-eth contract:send --pk hat1 dpcoin@${USDONC} 'mint("'${owner}'", 1000 )'
+echo minting  100000 USDONA@${USDONA} to owner
+eth contract:send --pk hat1 dpcoin@${USDONA} 'mint("'${owner}'", 100000 )'
+echo minting 1000000 USDONC@${USDONC} to owner
+eth contract:send --pk hat1 dpcoin@${USDONC} 'mint("'${owner}'", 1000000 )'
+
+# UNISWAP FACTORY deploy
+FACTORY=$(eth contract:deploy -n hardhat --pk hat1 --abi uniswap-v2-factory --args [\"${owner}\"]  ./artifacts/UniswapV2Factory.bin | jq -r .address )
+echo uniswap v2 FACTORY ${FACTORY}
 
 # UNISWAP POOL deploy
-POOL=$( eth contract:deploy -n hardhat --pk hat1 ./artifacts/UniswapV2Pair.bin | jq -r .address )
+#POOL=$(eth contract:deploy -n hardhat --pk hat1 ./artifacts/UniswapV2Pair.bin | jq -r .address )
+eth contract:send --pk hat1 uniswap-v2-factory@${FACTORY} 'createPair("'${USDONA}'","'${USDONC}'")' 
+POOL=$(eth contract:call uniswap-v2-factory@${FACTORY} 'getPair("'${USDONA}'","'${USDONC}'")' )
 echo uniswap v2 DEPLOYED ${POOL}
-echo uniswap v2 initialitze\(${USDONA}, ${USDONC}\)
-eth contract:send --pk hat1 uniswap-v2-pair@${POOL} 'initialize("'${USDONA}'","'${USDONC}'")'
+#echo uniswap v2 initialitze\(${USDONA}, ${USDONC}\)
+#eth contract:send --pk hat1 uniswap-v2-pair@${POOL} 'initialize("'${USDONA}'","'${USDONC}'")'
 
 # Add USDONA
 echo owner USDA balance `eth contract:call dpcoin@${USDONA} 'balanceOf("'${owner}'")'`
-echo transfer 2 USDONA to ${POOL}
-eth contract:send --pk hat1 dpcoin@${USDONA} 'transfer("'${POOL}'", 2 )'
-echo pool USDA balance `eth contract:call uniswap-v2-pair@${POOL} 'balanceOf("'${owner}'")'`
-echo transfer 3 USDONC to ${POOL}
-eth contract:send --pk hat1 dpcoin@${USDONC} 'transfer("'${POOL}'", 3 )'
+echo transfer 20000 USDONA to ${POOL}
+eth contract:send --pk hat1 dpcoin@${USDONA} 'transfer("'${POOL}'", 20000 )'
+echo pool USDA balance `eth contract:call dpcoin@${USDONA} 'balanceOf("'${POOL}'")'`
+echo transfer 30000 USDONC to ${POOL}
+eth contract:send --pk hat1 dpcoin@${USDONC} 'transfer("'${POOL}'", 30000 )'
+echo pool USDC balance `eth contract:call dpcoin@${USDONC} 'balanceOf("'${POOL}'")'`
 echo pool mint to ${owner}
-eth contract:call uniswap-v2-pair@${POOL} 'getReserves()'
 eth contract:send --pk hat1 uniswap-v2-pair@${POOL} 'mint("'${owner}'")'
+eth contract:call uniswap-v2-pair@${POOL} 'getReserves()'
