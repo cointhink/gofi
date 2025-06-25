@@ -23,11 +23,12 @@ contract UniSwab {
     ) public onlyOwner {
         (uint112 _reserve00, uint112 _reserve01, ) = IUniswapV2Pair(pool0)
             .getReserves();
+        // function transfer(address to, uint value) external returns (bool);
         ERC20(IUniswapV2Pair(pool0).token0()).transfer(pool0, amount1In);
-        uint256 amount0Out = getAmountOut(amount1In, _reserve01, _reserve00);
+        // uint256 amount0Out = getAmountOut(amount1In, _reserve01, _reserve00);
 
         // function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-        IUniswapV2Pair(pool0).swap(amount0Out, 0, owner, new bytes(0));
+        // IUniswapV2Pair(pool0).swap(amount0Out, 0, owner, new bytes(0));
         // IUniswapV2Pair(pool1).swap(0, amount1Out, owner, new bytes(0));
     }
 

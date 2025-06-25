@@ -12,6 +12,9 @@ dirs: | $(artifacts_dir) $(library_dir) $(library_dir)/v2-core-1.0.1 $(library_d
 format:
 	prettier $(contracts_dir)
 
+swab: $(artifacts_dir)/UniSwab.bin
+	eth contract:deploy -n hardhat --pk hat2 artifacts/UniSwab.bin | jq .address
+
 deploy: $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
 	./deploy.sh
 
