@@ -7,7 +7,10 @@ contracts := $(patsubst $(contracts_dir)/%.sol,%.sol,$(wildcard $(contracts_dir)
 
 all: dirs $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
 
-dirs: | $(artifacts_dir) $(library_dir)
+dirs: | $(artifacts_dir) $(library_dir) $(library_dir)/v2-core-1.0.1 $(library_dir)/openzeppelin-contracts-5.3.0
+
+format:
+	prettier $(contracts_dir)
 
 deploy: $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
 	./deploy.sh
@@ -18,8 +21,10 @@ $(artifacts_dir)/%.bin: $(contracts_dir)/%.sol
 $(artifacts_dir):
 	@mkdir -p $(artifacts_dir)
 
-$(library_dir): $(library_dir)/v2-core-1.0.1
+$(library_dir):
 	@mkdir -p $(library_dir)
+
+$(library_dir)/openzeppelin-contracts-5.3.0:
 	wget https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v5.3.0.tar.gz
 	tar xCf $(library_dir) v5.3.0.tar.gz
 	rm v5.3.0.tar.gz

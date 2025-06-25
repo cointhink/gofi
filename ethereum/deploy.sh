@@ -3,6 +3,11 @@ owner=$(eth address:show hat1 | jq -r '.["*"].address')
 echo owner: ${owner}
 
 echo #################################################
+UNISWAB=$(eth contract:deploy -n hardhat --pk hat2  ./${artifacts_dir}/UniSwab.bin | jq -r .address)
+echo UNISWAB: ${UNISWAB}
+exit
+
+echo #################################################
 # ERC20 deploy
 USDONA=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/UsDonA.bin | jq -r .address)
 echo USDONA: ${USDONA}
