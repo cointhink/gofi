@@ -42,9 +42,9 @@ fn main() -> Result<(), postgres::Error> {
         WETH
     );
 
-    // for r#match in &matches {
-    //     println!("{}", r#match.to_string())
-    // }
+    for r#match in &matches {
+        println!("{}", r#match.to_string())
+    }
 
     let winner = matches
         .iter()
@@ -69,6 +69,13 @@ async fn maineth(winner: &Match) {
         UniswapV2Pair,
         "sol-abi/UniswapV2Pair.json"
     );
+    const ETH_MAINNET_ROUTER: &str = "7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+    sol!(
+        #[sol(rpc)]
+        UniswapV2Router,
+        "sol-abi/uniswap-v2-router02.json"
+    );
+
     println!("winner: {}", winner.to_string());
     // is account approved for pool 0
     uni_approved(
@@ -76,11 +83,13 @@ async fn maineth(winner: &Match) {
         &winner.pair.pool0.pool.contract_address,
     );
     let geth_url = Url::parse(&config.geth_url).unwrap();
-
     let provider = ProviderBuilder::new().connect_http(geth_url.clone());
+
+    let router = UniswapV2Router::new(ETH_MAINNET_ROUTER.parse().unwrap(), &provider);
+    // router.swapTokensForExactTokens(winner.pool0_ax_out, amountInMax, path, to, deadline);
     let contract = UniswapV2Pair::new(
         winner.pair.pool0.pool.contract_address.parse().unwrap(),
-        provider,
+        &provider,
     );
 
     let (r0, r1, btime) = contract.getReserves().call().await.unwrap().into();
@@ -351,7 +360,7 @@ pub fn quadratic_root(a: f64, b: f64, c: f64) -> f64 {
 }
 
 pub fn get_y_out(dx: u128, x: u128, y: u128) -> u128 {
-    // (997 * dx * y) / (1000 * x + 997 * dx)
+    // uniswap paper: (997 * dx * y) / (1000 * x + 997 * dx)
     let big = (U256::from(997) * U256::from(dx) * U256::from(y))
         / (U256::from(1000) * U256::from(x) + U256::from(997) * U256::from(dx));
     big.as_le_slice().get_u128_le()
