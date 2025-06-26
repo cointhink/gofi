@@ -18,13 +18,14 @@ contract UniSwab {
 
     function swab(
         uint256 amount1In,
-        address pool0,
-        address pool1
+        address pool0_addr,
+        address pool1_addr
     ) public onlyOwner {
-        (uint112 _reserve00, uint112 _reserve01, ) = IUniswapV2Pair(pool0)
-            .getReserves();
+        IUniswapV2Pair pool0 = IUniswapV2Pair(pool0_addr);
+        (uint112 _reserve00, uint112 _reserve01, ) = pool0.getReserves();
         // function transfer(address to, uint value) external returns (bool);
-        ERC20(IUniswapV2Pair(pool0).token0()).transfer(pool0, amount1In);
+        ERC20 token0 = ERC20(pool0.token0());
+        // token0.transfer(pool0_addr, amount1In);
         // uint256 amount0Out = getAmountOut(amount1In, _reserve01, _reserve00);
 
         // function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
