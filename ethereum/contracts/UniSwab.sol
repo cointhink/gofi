@@ -25,11 +25,11 @@ contract UniSwab {
         (uint112 _reserve00, uint112 _reserve01, ) = pool0.getReserves();
         // function transfer(address to, uint value) external returns (bool);
         ERC20 token0 = ERC20(pool0.token0());
-        // token0.transfer(pool0_addr, amount1In);
-        // uint256 amount0Out = getAmountOut(amount1In, _reserve01, _reserve00);
+        token0.transferFrom(msg.sender, pool0_addr, amount1In);
+        uint256 amount0Out = getAmountOut(amount1In, _reserve01, _reserve00);
 
         // function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-        // IUniswapV2Pair(pool0).swap(amount0Out, 0, owner, new bytes(0));
+        IUniswapV2Pair(pool0).swap(amount0Out, 0, owner, new bytes(0));
         // IUniswapV2Pair(pool1).swap(0, amount1Out, owner, new bytes(0));
     }
 
