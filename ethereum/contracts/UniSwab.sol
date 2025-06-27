@@ -22,15 +22,26 @@ contract UniSwab {
         address pool1_addr
     ) public onlyOwner {
         IUniswapV2Pair pool0 = IUniswapV2Pair(pool0_addr);
+        IUniswapV2Pair pool1 = IUniswapV2Pair(pool1_addr);
         (uint112 _reserve00, uint112 _reserve01, ) = pool0.getReserves();
+        (uint112 _reserve10, uint112 _reserve11, ) = pool1.getReserves();
 
-        ERC20 token01 = ERC20(pool0.token1());
+        ERC20 token0 = ERC20(pool0.token0());
+        ERC20 token1 = ERC20(pool0.token1());
+
+        // Step 1
         //  transferFrom(sender, recipient, amount)
-        token01.transferFrom(msg.sender, pool0_addr, amount1In);
+        token1.transferFrom(msg.sender, pool0_addr, amount1In);
         uint256 amount0Out = getAmountOut(amount1In, _reserve01, _reserve00);
+        require(amount0Out > 0, "Swab: amount0Out is zero");
         // function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
         pool0.swap(amount0Out, 0, owner, new bytes(0));
-        // IUniswapV2Pair(pool1).swap(0, amount1Out, owner, new bytes(0));
+
+        // Step 2
+        token0.transferFrom(msg.sender, pool1_addr, amount0Out);
+        uint256 amount1Out = getAmountOut(amount0Out, _reserve10, _reserve11);
+        require(amount1Out > 0, "Swab: amount1Out is zero");
+        pool0.swap(0, amount1Out, owner, new bytes(0));
     }
 
     // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
