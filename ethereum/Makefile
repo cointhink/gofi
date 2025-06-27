@@ -13,10 +13,10 @@ format:
 	prettier $(contracts_dir)
 
 swab: $(artifacts_dir)/UniSwab.bin
-	eth contract:deploy -n hardhat --pk hat2 artifacts/UniSwab.bin | jq .address
+	./deploy_swab.sh
 
 deploy: $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
-	./deploy.sh
+	./deploy_uniswap.sh
 
 $(artifacts_dir)/%.bin: $(contracts_dir)/%.sol
 	solc --overwrite --abi --bin --base-path . --include-path library -o artifacts $<

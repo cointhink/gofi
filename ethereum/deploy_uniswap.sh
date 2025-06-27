@@ -8,8 +8,10 @@ echo #################################################
 # ERC20 deploy
 USDONA=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/UsDonA.bin | jq -r .address)
 echo USDONA: ${USDONA}
+eth address:add usdona ${USDONA}
 USDONC=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/UsDonC.bin | jq -r .address)
 echo USDONC: ${USDONC} 
+eth address:add usdonc ${USDONC}
 echo updating abi in eth-cli
 eth abi:update dpcoin ./${artifacts_dir}/UsDonA.abi  
 
