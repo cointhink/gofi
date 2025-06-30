@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "v2-core-1.0.1/contracts/interfaces/IUniswapV2Pair.sol";
 import "openzeppelin-contracts-5.3.0/contracts/token/ERC20/ERC20.sol";
-import "console.sol";
 
 contract UniSwab {
     address public owner;
@@ -15,12 +14,6 @@ contract UniSwab {
     modifier onlyOwner() {
         require(msg.sender == owner, "only owner can call this");
         _;
-    }
-
-    struct PoolState {
-        address addr;
-        uint112 reserve0;
-        uint112 reserve1;
     }
 
     function swab(
@@ -61,16 +54,4 @@ contract UniSwab {
         amountOut = numerator / denominator;
     }
 
-    // given an output amount of an asset and pair reserves, returns a required input amount of the other asset
-    function getAmountIn(
-        uint256 amountOut,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) internal pure returns (uint256 amountIn) {
-        require(amountOut > 0, "GAI: INSUFFICIENT_OUTPUT_AMOUNT");
-        require(reserveIn > 0 && reserveOut > 0);
-        uint256 numerator = reserveIn * amountOut * 1000;
-        uint256 denominator = (reserveOut - amountOut) * 997;
-        amountIn = (numerator / denominator) + 1;
-    }
 }
