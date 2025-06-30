@@ -42,8 +42,8 @@ contract UniSwab {
             amount1In,
             ERC20(pool0.token1()),
             pool0,
-            _reserve01,
-            _reserve00
+            _reserve00,
+            _reserve01
         );
         console.log("amount0Out", amount0Out);
 
@@ -52,10 +52,10 @@ contract UniSwab {
         (uint112 _reserve10, uint112 _reserve11, ) = pool1.getReserves();
         uint256 amount1Out = _swap(
             amount0Out,
-            ERC20(pool0.token1()),
+            ERC20(pool0.token0()),
             pool1,
-            _reserve10,
-            _reserve11
+            _reserve11,
+            _reserve10
         );
         console.log("amount1Out", amount1Out);
         require(amount1Out > amount0Out, "UniSwab: no profit");
