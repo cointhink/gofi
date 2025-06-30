@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "v2-core-1.0.1/contracts/interfaces/IUniswapV2Pair.sol";
 import "openzeppelin-contracts-5.3.0/contracts/token/ERC20/ERC20.sol";
+import "console.sol";
 
 contract UniSwab {
     address public owner;
@@ -16,27 +17,47 @@ contract UniSwab {
         _;
     }
 
+    function _swap(
+        uint256 amount1In,
+        ERC20 token1,
+        IUniswapV2Pair pool,
+        uint112 reserve0,
+        uint112 reserve1
+    ) internal onlyOwner returns (uint256) {
+        token1.transferFrom(msg.sender, address(pool), amount1In);
+        uint256 amount0Out = getAmountOut(amount1In, reserve1, reserve0);
+        pool.swap(amount0Out, 0, owner, new bytes(0));
+        return amount0Out;
+    }
+
     function swab(
         uint256 amount1In,
         address pool0_addr,
         address pool1_addr
     ) public onlyOwner {
-        IUniswapV2Pair pool0 = IUniswapV2Pair(pool0_addr);
-        IUniswapV2Pair pool1 = IUniswapV2Pair(pool1_addr);
-
         // Step 1
-        //  transferFrom(sender, recipient, amount)
-        ERC20(pool0.token1()).transferFrom(msg.sender, pool0_addr, amount1In);
+        IUniswapV2Pair pool0 = IUniswapV2Pair(pool0_addr);
         (uint112 _reserve00, uint112 _reserve01, ) = pool0.getReserves();
-        uint256 amount0Out = getAmountOut(amount1In, _reserve01, _reserve00);
-        // function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-        pool0.swap(amount0Out, 0, owner, new bytes(0));
+        uint256 amount0Out = _swap(
+            amount1In,
+            ERC20(pool0.token1()),
+            pool0,
+            _reserve01,
+            _reserve00
+        );
+        console.log("amount0Out", amount0Out);
 
         // Step 2
-        ERC20(pool0.token0()).transferFrom(msg.sender, pool1_addr, amount0Out);
+        IUniswapV2Pair pool1 = IUniswapV2Pair(pool1_addr);
         (uint112 _reserve10, uint112 _reserve11, ) = pool1.getReserves();
-        uint256 amount1Out = getAmountOut(amount0Out, _reserve10, _reserve11);
-        pool1.swap(0, amount1Out, owner, new bytes(0));
+        uint256 amount1Out = _swap(
+            amount0Out,
+            ERC20(pool0.token1()),
+            pool1,
+            _reserve10,
+            _reserve11
+        );
+        console.log("amount1Out", amount1Out);
         require(amount1Out > amount0Out, "UniSwab: no profit");
     }
 
@@ -53,5 +74,4 @@ contract UniSwab {
         uint256 denominator = (reserveIn * 1000) + amountInWithFee;
         amountOut = numerator / denominator;
     }
-
 }
