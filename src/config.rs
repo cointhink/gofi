@@ -13,6 +13,7 @@ pub struct Config {
     pub geth_url: String,
     pub pg_url: String,
     pub eth_priv_key: String,
+    pub uniswab: String,
 }
 
 impl Config {

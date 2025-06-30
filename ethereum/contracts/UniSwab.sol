@@ -17,37 +17,39 @@ contract UniSwab {
         _;
     }
 
+    struct PoolState {
+        address addr;
+        uint112 reserve0;
+        uint112 reserve1;
+    }
+
     function swab(
         uint256 amount1In,
-        address pool0_addr,
-        address pool1_addr
+        PoolState calldata pool0,
+        PoolState calldata pool1
     ) public onlyOwner {
         console.log("amount1In", amount1In);
-        IUniswapV2Pair pool0 = IUniswapV2Pair(pool0_addr);
-        IUniswapV2Pair pool1 = IUniswapV2Pair(pool1_addr);
-        (uint112 _reserve00, uint112 _reserve01, ) = pool0.getReserves();
-        console.log('pool0 pre-swap', _reserve00, _reserve01);
-        (uint112 _reserve10, uint112 _reserve11, ) = pool1.getReserves();
-        console.log('pool1 pre-swap', _reserve10, _reserve11);
+        IUniswapV2Pair cpool0 = IUniswapV2Pair(pool0.addr);
+        IUniswapV2Pair cpool1 = IUniswapV2Pair(pool1.addr);
+        (uint112 _reserve00, uint112 _reserve01, ) = cpool0.getReserves();
+        require(pool0.reserve0 == _reserve00, "pool0_token0 OLD");
+        require(pool0.reserve1 == _reserve01, "pool0_token1 OLD");
+        (uint112 _reserve10, uint112 _reserve11, ) = cpool1.getReserves();
+        require(pool1.reserve0 == _reserve10, "pool1_token0 OLD");
+        require(pool1.reserve1 == _reserve11, "pool1_token1 OLD");
 
-        ERC20 token0 = ERC20(pool0.token0());
-        ERC20 token1 = ERC20(pool0.token1());
 
         // Step 1
         //  transferFrom(sender, recipient, amount)
-        token1.transferFrom(msg.sender, pool0_addr, amount1In);
+        ERC20(cpool0.token1()).transferFrom(msg.sender, pool0.addr, amount1In);
         uint256 amount0Out = getAmountOut(amount1In, _reserve01, _reserve00);
-        console.log("amount0Out", amount0Out);
-        require(amount0Out > 0, "Swab: amount0Out is zero");
         // function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-        pool0.swap(amount0Out, 0, owner, new bytes(0));
+        cpool0.swap(amount0Out, 0, owner, new bytes(0));
 
         // Step 2
-        token0.transferFrom(msg.sender, pool1_addr, amount0Out);
+        ERC20(cpool0.token0()).transferFrom(msg.sender, pool1.addr, amount0Out);
         uint256 amount1Out = getAmountOut(amount0Out, _reserve10, _reserve11);
-        console.log("amount1Out", amount1Out);
-        require(amount1Out > 0, "Swab: amount1Out is zero");
-        pool1.swap(0, amount1Out, owner, new bytes(0));
+        cpool1.swap(0, amount1Out, owner, new bytes(0));
         require(amount1Out > amount0Out, "UniSwab: no profit");
     }
 

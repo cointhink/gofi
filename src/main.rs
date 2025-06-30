@@ -69,11 +69,10 @@ async fn maineth(winner: &Match) {
         UniswapV2Pair,
         "sol-abi/UniswapV2Pair.json"
     );
-    const ETH_MAINNET_ROUTER: &str = "7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
     sol!(
         #[sol(rpc)]
-        UniswapV2Router,
-        "sol-abi/uniswap-v2-router02.json"
+        UniSwab,
+        "ethereum/artifacts/UniSwab.abi"
     );
 
     println!("winner: {}", winner.to_string());
@@ -85,14 +84,13 @@ async fn maineth(winner: &Match) {
     let geth_url = Url::parse(&config.geth_url).unwrap();
     let provider = ProviderBuilder::new().connect_http(geth_url.clone());
 
-    let router = UniswapV2Router::new(ETH_MAINNET_ROUTER.parse().unwrap(), &provider);
-    // router.swapTokensForExactTokens(winner.pool0_ax_out, amountInMax, path, to, deadline);
-    let contract = UniswapV2Pair::new(
+    let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
+    let pool0 = UniswapV2Pair::new(
         winner.pair.pool0.pool.contract_address.parse().unwrap(),
         &provider,
     );
 
-    let (r0, r1, btime) = contract.getReserves().call().await.unwrap().into();
+    let (r0, r1, btime) = pool0.getReserves().call().await.unwrap().into();
     println!(
         "fresh p0:{} r0: {} r1: {} btime: {}",
         winner.pair.pool0.pool.contract_address, r0, r1, btime
@@ -105,13 +103,11 @@ async fn maineth(winner: &Match) {
         config.public_key(),
         winner.pool0_ay_in,
     );
-    contract
-        .swap(
+    uniswab
+        .swab(
             U256::from(winner.pool0_ax_out),
-            U256::from(0),
-            // Address::from_slice(&config.public_key_bytes()),
             Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
-            Bytes::new(),
+            Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
         )
         .call()
         .await
