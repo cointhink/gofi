@@ -23,7 +23,7 @@ deploy: $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
 	./deploy_uniswap.sh
 
 $(artifacts_dir)/%.bin: $(contracts_dir)/%.sol
-	solc --overwrite --abi --bin --base-path . --include-path library -o artifacts $<
+	./bin/solc-latest --overwrite --abi --bin --base-path . --include-path library -o artifacts $<
 
 $(artifacts_dir):
 	@mkdir -p $(artifacts_dir)
@@ -47,4 +47,6 @@ $(bin_dir)/solc-0.5.16:
 	chmod 755 ./bin/solc-0.5.16
 	./bin/solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Pair.sol
 	./bin/solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Factory.sol
+	wget --quiet -O bin/solc-latest $(solc_bin_url)linux-$(arch)/$(shell curl https://binaries.soliditylang.org/linux-$(arch)/list.json | jq '.releases[.latestRelease]')
+	chmod 755 ./bin/solc-latest
 
