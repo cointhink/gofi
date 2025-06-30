@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "v2-core-1.0.1/contracts/interfaces/IUniswapV2Pair.sol";
 import "openzeppelin-contracts-5.3.0/contracts/token/ERC20/ERC20.sol";
+import "console.sol";
 
 contract UniSwab {
     address public owner;
@@ -21,10 +22,13 @@ contract UniSwab {
         address pool0_addr,
         address pool1_addr
     ) public onlyOwner {
+        console.log("amount1In", amount1In);
         IUniswapV2Pair pool0 = IUniswapV2Pair(pool0_addr);
         IUniswapV2Pair pool1 = IUniswapV2Pair(pool1_addr);
         (uint112 _reserve00, uint112 _reserve01, ) = pool0.getReserves();
+        console.log('pool0 pre-swap', _reserve00, _reserve01);
         (uint112 _reserve10, uint112 _reserve11, ) = pool1.getReserves();
+        console.log('pool1 pre-swap', _reserve10, _reserve11);
 
         ERC20 token0 = ERC20(pool0.token0());
         ERC20 token1 = ERC20(pool0.token1());
@@ -33,6 +37,7 @@ contract UniSwab {
         //  transferFrom(sender, recipient, amount)
         token1.transferFrom(msg.sender, pool0_addr, amount1In);
         uint256 amount0Out = getAmountOut(amount1In, _reserve01, _reserve00);
+        console.log("amount0Out", amount0Out);
         require(amount0Out > 0, "Swab: amount0Out is zero");
         // function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
         pool0.swap(amount0Out, 0, owner, new bytes(0));
@@ -40,8 +45,10 @@ contract UniSwab {
         // Step 2
         token0.transferFrom(msg.sender, pool1_addr, amount0Out);
         uint256 amount1Out = getAmountOut(amount0Out, _reserve10, _reserve11);
+        console.log("amount1Out", amount1Out);
         require(amount1Out > 0, "Swab: amount1Out is zero");
-        pool0.swap(0, amount1Out, owner, new bytes(0));
+        pool1.swap(0, amount1Out, owner, new bytes(0));
+        require(amount1Out > amount0Out, "UniSwab: no profit");
     }
 
     // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
@@ -50,7 +57,7 @@ contract UniSwab {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
-        require(amountIn > 0, "INSUFFICIENT_INPUT_AMOUNT");
+        require(amountIn > 0, "GAO: INSUFFICIENT_INPUT_AMOUNT");
         require(reserveIn > 0 && reserveOut > 0);
         uint256 amountInWithFee = amountIn * 997;
         uint256 numerator = amountInWithFee * reserveOut;
@@ -64,7 +71,7 @@ contract UniSwab {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountIn) {
-        require(amountOut > 0, "INSUFFICIENT_OUTPUT_AMOUNT");
+        require(amountOut > 0, "GAI: INSUFFICIENT_OUTPUT_AMOUNT");
         require(reserveIn > 0 && reserveOut > 0);
         uint256 numerator = reserveIn * amountOut * 1000;
         uint256 denominator = (reserveOut - amountOut) * 997;
