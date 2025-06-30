@@ -54,6 +54,6 @@ eth contract:call uniswap-v2-pair@${POOL} 'getReserves()'
 
 }
 
-pool 210000 310000
 pool 320000 220000
+pool 210000 310000
 
