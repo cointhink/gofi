@@ -7,10 +7,11 @@ bin_dir := bin
 contracts := $(patsubst $(contracts_dir)/%.sol,%.sol,$(wildcard $(contracts_dir)/*.sol))
 arch := $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 $(info arch $(arch))
+solc_bin_url := https://binaries.soliditylang.org/
 
 all: dirs $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
 
-dirs: | $(artifacts_dir) $(library_dir) $(library_dir)/v2-core-1.0.1 $(library_dir)/openzeppelin-contracts-5.3.0 $(bin_dir)/solc
+dirs: | $(artifacts_dir) $(library_dir) $(library_dir)/v2-core-1.0.1 $(library_dir)/openzeppelin-contracts-5.3.0 $(bin_dir)/solc-0.5.16
 
 format:
 	prettier $(contracts_dir)
@@ -40,9 +41,9 @@ $(library_dir)/v2-core-1.0.1:
 	tar xCf $(library_dir) v1.0.1.tar.gz
 	rm v1.0.1.tar.gz
 
-$(bin_dir)/solc:
+$(bin_dir)/solc-0.5.16:
 	mkdir -p bin
-	wget --quiet -O bin/solc-0.5.16 https://github.com/ethereum/solc-bin/raw/refs/heads/gh-pages/linux-$(arch)/solc-linux-$(arch)-v0.5.16+commit.9c3226ce
+	wget --quiet -O bin/solc-0.5.16 $(solc_bin_url)linux-$(arch)/solc-linux-$(arch)-v0.5.16+commit.9c3226ce
 	chmod 755 ./bin/solc-0.5.16
 	./bin/solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Pair.sol
 	./bin/solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Factory.sol

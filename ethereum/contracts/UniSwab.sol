@@ -28,7 +28,6 @@ contract UniSwab {
         PoolState calldata pool0,
         PoolState calldata pool1
     ) public onlyOwner {
-        console.log("amount1In", amount1In);
         IUniswapV2Pair cpool0 = IUniswapV2Pair(pool0.addr);
         IUniswapV2Pair cpool1 = IUniswapV2Pair(pool1.addr);
         (uint112 _reserve00, uint112 _reserve01, ) = cpool0.getReserves();

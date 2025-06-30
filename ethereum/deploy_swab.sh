@@ -1,3 +1,4 @@
+eth abi:update uniswab artifacts/UniSwab.abi
 uniswab=$(eth contract:deploy -n hardhat --pk hat2 artifacts/UniSwab.bin | jq -r .address)
 echo uniswab ${uniswab}
 eth address:add uniswab ${uniswab} > /dev/null
