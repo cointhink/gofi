@@ -17,17 +17,28 @@ contract UniSwab {
         _;
     }
 
-    function _swap(
+    function _swap1to0(
         uint256 amount1In,
-        ERC20 token1,
-        IUniswapV2Pair pool,
-        uint112 reserve0,
-        uint112 reserve1
+        IUniswapV2Pair pool
     ) internal onlyOwner returns (uint256) {
+        ERC20 token1 = ERC20(pool.token1());
         token1.transferFrom(msg.sender, address(pool), amount1In);
+        (uint112 reserve0, uint112 reserve1, ) = pool.getReserves();
         uint256 amount0Out = getAmountOut(amount1In, reserve1, reserve0);
         pool.swap(amount0Out, 0, owner, new bytes(0));
         return amount0Out;
+    }
+
+    function _swap0to1(
+        uint256 amount0In,
+        IUniswapV2Pair pool
+    ) internal onlyOwner returns (uint256) {
+        ERC20 token0 = ERC20(pool.token0());
+        token0.transferFrom(msg.sender, address(pool), amount0In);
+        (uint112 reserve0, uint112 reserve1, ) = pool.getReserves();
+        uint256 amount1Out = getAmountOut(amount0In, reserve0, reserve1);
+        pool.swap(0, amount1Out, owner, new bytes(0));
+        return amount1Out;
     }
 
     function swab(
@@ -36,27 +47,11 @@ contract UniSwab {
         address pool1_addr
     ) public onlyOwner {
         // Step 1
-        IUniswapV2Pair pool0 = IUniswapV2Pair(pool0_addr);
-        (uint112 _reserve00, uint112 _reserve01, ) = pool0.getReserves();
-        uint256 amount0Out = _swap(
-            amount1In,
-            ERC20(pool0.token1()),
-            pool0,
-            _reserve00,
-            _reserve01
-        );
+        uint256 amount0Out = _swap1to0(amount1In, IUniswapV2Pair(pool0_addr));
         console.log("amount0Out", amount0Out);
 
         // Step 2
-        IUniswapV2Pair pool1 = IUniswapV2Pair(pool1_addr);
-        (uint112 _reserve10, uint112 _reserve11, ) = pool1.getReserves();
-        uint256 amount1Out = _swap(
-            amount0Out,
-            ERC20(pool0.token0()),
-            pool1,
-            _reserve11,
-            _reserve10
-        );
+        uint256 amount1Out = _swap0to1(amount0Out, IUniswapV2Pair(pool1_addr));
         console.log("amount1Out", amount1Out);
         require(amount1Out > amount0Out, "UniSwab: no profit");
     }
