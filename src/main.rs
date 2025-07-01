@@ -2,8 +2,7 @@
 
 use alloy::{
     primitives::{Address, U256, bytes::Buf},
-    providers::ProviderBuilder,
-    rpc::client::{ClientBuilder, ReqwestClient},
+    providers::{Provider, ProviderBuilder},
     signers::local::PrivateKeySigner,
     sol,
     transports::http::reqwest::Url,
@@ -87,6 +86,11 @@ async fn maineth(winner: &Match) {
         .connect_http(geth_url.clone());
     let uniswab = config.uniswab.parse().unwrap();
 
+    println!(
+        "{} eth: {}",
+        public_key,
+        provider.get_balance(public_key).await.unwrap()
+    );
     let weth = ERC20::new(WETH.parse().unwrap(), &provider);
     let weth_allowance = weth.allowance(public_key, uniswab).call().await.unwrap();
     println!(
@@ -150,13 +154,11 @@ async fn maineth(winner: &Match) {
     //     .await
     //     .unwrap();
 
-    // Prepare a request to the server.
-    let client: ReqwestClient = ClientBuilder::default().http(geth_url.clone());
-    let request = client.request_noparams("eth_blockNumber");
-
-    // Poll the request to completion.
-    let block_number_str: String = request.await.unwrap();
-    println!("eth_blockNumber: {}", block_number_str);
+    println!(
+        "{} eth: {}",
+        public_key,
+        provider.get_balance(public_key).await.unwrap()
+    );
 }
 
 struct Pool {
