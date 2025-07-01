@@ -112,7 +112,7 @@ async fn maineth(winner: &Match) {
             .get_receipt()
             .await
             .unwrap();
-        println!("wth allownace tx: {}", hex::encode(tx.transaction_hash));
+        println!("weth allownace tx: {}", hex::encode(tx.transaction_hash));
     }
 
     let usdt = ERC20::new(USDT.parse().unwrap(), &provider);
@@ -127,6 +127,17 @@ async fn maineth(winner: &Match) {
         usdt.balanceOf(public_key).call().await.unwrap(),
         usdt_allowance
     );
+    if usdt_allowance == U256::from(0) {
+        let tx = usdt
+            .approve(uniswab, U256::MAX)
+            .send()
+            .await
+            .unwrap()
+            .get_receipt()
+            .await
+            .unwrap();
+        println!("usdt allownace tx: {}", hex::encode(tx.transaction_hash));
+    }
 
     println!("winner: {}", winner.to_string());
     // let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
