@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use alloy::{
-    primitives::{Address, U256, bytes::Buf},
+    primitives::{Address, U256, bytes::Buf, utils::format_units},
     providers::{Provider, ProviderBuilder},
     signers::local::PrivateKeySigner,
     sol,
@@ -27,7 +27,11 @@ fn main() -> Result<(), postgres::Error> {
 
     let config = config::CONFIG.get().unwrap();
     let mut db = Client::connect(&config.pg_url, NoTls)?;
-    println!("gofi {} eth 0x{}", config::FILENAME, config.public_key());
+    println!(
+        "gofi config:{} eth:0x{}",
+        config::FILENAME,
+        config.public_key()
+    );
 
     let pools_count = rows_count(&mut db, "pools");
     let pairs = pairs_with(&mut db, WETH)?;
@@ -89,7 +93,7 @@ async fn maineth(winner: &Match) {
     println!(
         "{} eth: {}",
         public_key,
-        provider.get_balance(public_key).await.unwrap()
+        format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
     );
     let weth = ERC20::new(WETH.parse().unwrap(), &provider);
     let weth_allowance = weth.allowance(public_key, uniswab).call().await.unwrap();
@@ -108,7 +112,7 @@ async fn maineth(winner: &Match) {
             .get_receipt()
             .await
             .unwrap();
-        println!("tx: {}", hex::encode(tx.transaction_hash));
+        println!("wth allownace tx: {}", hex::encode(tx.transaction_hash));
     }
 
     let usdt = ERC20::new(USDT.parse().unwrap(), &provider);
@@ -157,7 +161,7 @@ async fn maineth(winner: &Match) {
     println!(
         "{} eth: {}",
         public_key,
-        provider.get_balance(public_key).await.unwrap()
+        format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
     );
 }
 
