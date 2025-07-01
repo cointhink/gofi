@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
-use ERC20::ERC20Instance;
 use alloy::{
     primitives::{Address, U256, bytes::Buf},
-    providers::{Provider, ProviderBuilder},
+    providers::ProviderBuilder,
     rpc::client::{ClientBuilder, ReqwestClient},
+    signers::local::PrivateKeySigner,
     sol,
     transports::http::reqwest::Url,
 };
@@ -81,20 +81,32 @@ async fn maineth(winner: &Match) {
     let config = config::CONFIG.get().unwrap();
     let public_key: Address = config.public_key().parse().unwrap();
     let geth_url = Url::parse(&config.geth_url).unwrap();
-    let provider = ProviderBuilder::new().connect_http(geth_url.clone());
+    let pk_signer: PrivateKeySigner = config.eth_priv_key.parse().unwrap();
+    let provider = ProviderBuilder::new()
+        .wallet(pk_signer)
+        .connect_http(geth_url.clone());
+    let uniswab = config.uniswab.parse().unwrap();
 
     let weth = ERC20::new(WETH.parse().unwrap(), &provider);
-    let weth_allowance = weth
-        .allowance(public_key, config.uniswab.parse().unwrap())
-        .call()
-        .await
-        .unwrap();
+    let weth_allowance = weth.allowance(public_key, uniswab).call().await.unwrap();
     println!(
         "{} WETH: {} allowance: {}",
         public_key,
         weth.balanceOf(public_key).call().await.unwrap(),
         weth_allowance
     );
+    if weth_allowance == U256::from(0) {
+        let tx = weth
+            .approve(uniswab, U256::MAX)
+            .send()
+            .await
+            .unwrap()
+            .get_receipt()
+            .await
+            .unwrap();
+        println!("tx: {}", hex::encode(tx.transaction_hash));
+    }
+
     let usdt = ERC20::new(USDT.parse().unwrap(), &provider);
     let usdt_allowance = usdt
         .allowance(public_key, config.uniswab.parse().unwrap())
