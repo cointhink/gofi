@@ -1,10 +1,9 @@
 #![allow(dead_code)]
-use std::collections::HashMap;
 
+use ERC20::ERC20Instance;
 use alloy::{
-    hex::decode,
-    primitives::{Address, Bytes, U256, bytes::Buf},
-    providers::ProviderBuilder,
+    primitives::{Address, U256, bytes::Buf},
+    providers::{Provider, ProviderBuilder},
     rpc::client::{ClientBuilder, ReqwestClient},
     sol,
     transports::http::reqwest::Url,
@@ -61,30 +60,56 @@ fn main() -> Result<(), postgres::Error> {
     Ok(())
 }
 
+sol!(
+    #[sol(rpc)]
+    UniswapV2Pair,
+    "sol-abi/UniswapV2Pair.json"
+);
+sol!(
+    #[sol(rpc)]
+    ERC20,
+    "sol-abi/ERC20.json"
+);
+sol!(
+    #[sol(rpc)]
+    UniSwab,
+    "ethereum/artifacts/UniSwab.abi"
+);
+
 #[tokio::main]
 async fn maineth(winner: &Match) {
     let config = config::CONFIG.get().unwrap();
-    sol!(
-        #[sol(rpc)]
-        UniswapV2Pair,
-        "sol-abi/UniswapV2Pair.json"
-    );
-    sol!(
-        #[sol(rpc)]
-        UniSwab,
-        "ethereum/artifacts/UniSwab.abi"
-    );
-
-    println!("winner: {}", winner.to_string());
-    // is account approved for pool 0
-    uni_approved(
-        &config.public_key(),
-        &winner.pair.pool0.pool.contract_address,
-    );
+    let public_key: Address = config.public_key().parse().unwrap();
     let geth_url = Url::parse(&config.geth_url).unwrap();
     let provider = ProviderBuilder::new().connect_http(geth_url.clone());
 
-    let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
+    let weth = ERC20::new(WETH.parse().unwrap(), &provider);
+    let weth_allowance = weth
+        .allowance(public_key, config.uniswab.parse().unwrap())
+        .call()
+        .await
+        .unwrap();
+    println!(
+        "{} WETH: {} allowance: {}",
+        public_key,
+        weth.balanceOf(public_key).call().await.unwrap(),
+        weth_allowance
+    );
+    let usdt = ERC20::new(USDT.parse().unwrap(), &provider);
+    let usdt_allowance = usdt
+        .allowance(public_key, config.uniswab.parse().unwrap())
+        .call()
+        .await
+        .unwrap();
+    println!(
+        "{} USDT: {} allowance: {}",
+        public_key,
+        usdt.balanceOf(public_key).call().await.unwrap(),
+        usdt_allowance
+    );
+
+    println!("winner: {}", winner.to_string());
+    // let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
     let pool0 = UniswapV2Pair::new(
         winner.pair.pool0.pool.contract_address.parse().unwrap(),
         &provider,
@@ -120,12 +145,6 @@ async fn maineth(winner: &Match) {
     // Poll the request to completion.
     let block_number_str: String = request.await.unwrap();
     println!("eth_blockNumber: {}", block_number_str);
-}
-
-fn uni_approved(public_key: &str, contract_address: &str) -> bool {
-    let mut uq = HashMap::<&str, &str>::default();
-    uq.insert(public_key, contract_address);
-    false
 }
 
 struct Pool {
