@@ -340,12 +340,12 @@ impl Match {
             self.pair.pool0.pool.coin1.symbol,
             self.pair.pool0.pool.contract_address,
             self.pair.pool0.reserve.block_number,
-            self.pair.pool0.reserve.x,
-            self.pair.pool0.reserve.y,
+            self.pair.pool0.reserve.x as f64 / 10_f64.powi(self.pair.pool0.pool.coin0.decimals),
+            self.pair.pool0.reserve.y as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
             self.pair.pool1.pool.contract_address,
             self.pair.pool1.reserve.block_number,
-            self.pair.pool1.reserve.x,
-            self.pair.pool1.reserve.y,
+            self.pair.pool1.reserve.x as f64 / 10_f64.powi(self.pair.pool1.pool.coin0.decimals),
+            self.pair.pool1.reserve.y as f64 / 10_f64.powi(self.pair.pool1.pool.coin1.decimals),
         )
     }
 
