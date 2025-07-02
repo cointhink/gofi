@@ -7,6 +7,7 @@ use alloy::{
     sol,
     transports::http::reqwest::Url,
 };
+use chrono::DateTime;
 use postgres::{Client, NoTls};
 
 mod config;
@@ -169,14 +170,16 @@ async fn maineth(winner: Match) {
     );
 
     let (r00, r01, btime0) = pool0.getReserves().call().await.unwrap().into();
+    let btime0_str = DateTime::from_timestamp(btime0 as i64, 0).unwrap();
     println!(
-        "fresh p0: {} r0: {} r1: {} btime: {}",
-        winner.pair.pool0.pool.contract_address, r00, r01, btime0
+        "fresh p0: {} r0: {} r1: {} btime: {} {}",
+        winner.pair.pool0.pool.contract_address, r00, r01, btime0, btime0_str
     );
     let (r10, r11, btime1) = pool1.getReserves().call().await.unwrap().into();
+    let btime1_str = DateTime::from_timestamp(btime1 as i64, 0).unwrap();
     println!(
-        "fresh p1: {} r0: {} r1: {} btime: {}",
-        winner.pair.pool1.pool.contract_address, r10, r11, btime1
+        "fresh p1: {} r0: {} r1: {} btime: {} {}",
+        winner.pair.pool1.pool.contract_address, r10, r11, btime1, btime1_str
     );
     println!("winner profit: {}", winner.scaled_profit());
     let fresh_pair = Pair {
