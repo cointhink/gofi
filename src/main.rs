@@ -145,19 +145,25 @@ async fn maineth(winner: Match) {
     }
 
     println!("winner: {}", winner.to_string());
+    let wtime0_str =
+        DateTime::from_timestamp(winner.pair.pool0.reserve.block_timestamp as i64, 0).unwrap();
+    let wtime1_str =
+        DateTime::from_timestamp(winner.pair.pool1.reserve.block_timestamp as i64, 0).unwrap();
     println!(
-        "winner p0: {} r0: {} r1: {} block: {}",
+        "winner p0: {} r0: {} r1: {} block: {} {}",
         winner.pair.pool0.pool.contract_address,
         winner.pair.pool0.reserve.x,
         winner.pair.pool0.reserve.y,
-        winner.pair.pool0.reserve.block
+        winner.pair.pool0.reserve.block_number,
+        wtime0_str,
     );
     println!(
-        "winner p1: {} r0: {} r1: {} block: {}",
+        "winner p1: {} r0: {} r1: {} block: {} {}",
         winner.pair.pool1.pool.contract_address,
         winner.pair.pool1.reserve.x,
         winner.pair.pool1.reserve.y,
-        winner.pair.pool1.reserve.block
+        winner.pair.pool1.reserve.block_number,
+        wtime1_str,
     );
     // let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
     let pool0 = UniswapV2Pair::new(
@@ -189,7 +195,8 @@ async fn maineth(winner: Match) {
                 contract_address: "0x00".to_owned(),
                 x: r00.to(),
                 y: r01.to(),
-                block: 0,
+                block_number: 0,
+                block_timestamp: btime0,
             },
         },
         pool1: PoolSnapshot {
@@ -198,7 +205,8 @@ async fn maineth(winner: Match) {
                 contract_address: "0x01".to_owned(),
                 x: r10.to(),
                 y: r11.to(),
-                block: 1,
+                block_number: 1,
+                block_timestamp: btime1,
             },
         },
     };
@@ -258,7 +266,8 @@ struct Reserve {
     contract_address: String,
     x: u128,
     y: u128,
-    block: u32,
+    block_number: u32,
+    block_timestamp: u32,
 }
 
 impl Reserve {
@@ -269,11 +278,13 @@ impl Reserve {
         let pool_digits_y: &str = row.get(sql_field!("qty_y{}", pool_digit));
         let pool_y = u128::from_str_radix(pool_digits_y, 10).unwrap();
         let pool_block: i32 = row.get(sql_field!("p{}_block_number", pool_digit));
+        let pool_timestamp: i32 = row.get(sql_field!("p{}_block_timestamp", pool_digit));
         Reserve {
             contract_address: pool_contract_address.to_owned(),
             x: pool_x,
             y: pool_y,
-            block: pool_block as u32,
+            block_number: pool_block as u32,
+            block_timestamp: pool_timestamp as u32,
         }
     }
 }
@@ -320,11 +331,11 @@ impl Match {
             self.scaled_profit(),
             self.pair.pool0.pool.coin1.symbol,
             self.pair.pool0.pool.contract_address,
-            self.pair.pool0.reserve.block,
+            self.pair.pool0.reserve.block_number,
             self.pair.pool0.reserve.x,
             self.pair.pool0.reserve.y,
             self.pair.pool1.pool.contract_address,
-            self.pair.pool1.reserve.block,
+            self.pair.pool1.reserve.block_number,
             self.pair.pool1.reserve.x,
             self.pair.pool1.reserve.y,
         )
@@ -432,6 +443,8 @@ fn pairs_with(
                      p2.token1 as p2_token1,
                      lrp1.x as qty_x1, lrp2.x AS qty_x2, lrp1.block_number AS p1_block_number,
                      lrp1.y as qty_y1, lrp2.y AS qty_y2, lrp2.block_number AS p2_block_number,
+                     lrp1b.timestamp as p1_block_timestamp,
+                     lrp2b.timestamp as p2_block_timestamp,
                      ABS((lrp1.x::decimal/lrp1.y::decimal) - (lrp2.x::decimal/lrp2.y::decimal))::float8 as spread,
                      (least(lrp1.x::decimal , lrp2.x::decimal ) *
                        ABS((lrp1.x::decimal/lrp1.y::decimal) - (lrp2.x::decimal/lrp2.y::decimal)))::float8 as value
@@ -439,6 +452,8 @@ fn pairs_with(
               JOIN pools AS p2 ON p1.token0 = p2.token0 AND p1.token1 = p2.token1 AND p1.contract_address != p2.contract_address AND p1.token0 = $1
               JOIN latest_reserves AS lrp1 ON p1.contract_address = lrp1.contract_address AND lrp1.row_number = 1
               JOIN latest_reserves AS lrp2 ON p2.contract_address = lrp2.contract_address AND lrp2.row_number = 1
+              JOIN blocks as lrp1b ON lrp1b.number = lrp1.block_number
+              JOIN blocks as lrp2b ON lrp2b.number = lrp2.block_number
               ORDER BY value desc";
 
     db.query(sql, &[&base_token])
