@@ -105,7 +105,7 @@ async fn maineth(winner: Match) {
     println!(
         "{} WETH: {}",
         public_key,
-        weth.balanceOf(public_key).call().await.unwrap(),
+        Into::<f64>::into(weth.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
     );
     if weth_allowance == U256::from(0) {
         let tx = weth
@@ -128,7 +128,7 @@ async fn maineth(winner: Match) {
     println!(
         "{} USDT: {}",
         public_key,
-        usdt.balanceOf(public_key).call().await.unwrap(),
+        Into::<f64>::into(usdt.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(6),
     );
     if usdt_allowance == U256::from(0) {
         let tx = usdt
@@ -236,12 +236,12 @@ async fn maineth(winner: Match) {
     println!(
         "{} WETH: {}",
         public_key,
-        weth.balanceOf(public_key).call().await.unwrap(),
+        Into::<f64>::into(weth.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
     );
     println!(
         "{} USDT: {}",
         public_key,
-        usdt.balanceOf(public_key).call().await.unwrap(),
+        Into::<f64>::into(usdt.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(6),
     );
 }
 
