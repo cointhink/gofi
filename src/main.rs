@@ -141,6 +141,20 @@ async fn maineth(winner: Match) {
     }
 
     println!("winner: {}", winner.to_string());
+    println!(
+        "winner p0: {} r0: {} r1: {} block: {}",
+        winner.pair.pool0.pool.contract_address,
+        winner.pair.pool0.reserve.x,
+        winner.pair.pool0.reserve.y,
+        winner.pair.pool0.reserve.block
+    );
+    println!(
+        "winner p1: {} r0: {} r1: {} block: {}",
+        winner.pair.pool1.pool.contract_address,
+        winner.pair.pool1.reserve.x,
+        winner.pair.pool1.reserve.y,
+        winner.pair.pool1.reserve.block
+    );
     // let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
     let pool0 = UniswapV2Pair::new(
         winner.pair.pool0.pool.contract_address.parse().unwrap(),
@@ -162,8 +176,28 @@ async fn maineth(winner: Match) {
         winner.pair.pool1.pool.contract_address, r10, r11, btime1
     );
     println!("winner profit: {}", winner.scaled_profit());
-    let fresh = trade_simulate(winner.pair).unwrap();
-    println!("fresh profit: {}", fresh.scaled_profit());
+    let fresh_pair = Pair {
+        pool0: PoolSnapshot {
+            pool: winner.pair.pool0.pool,
+            reserve: Reserve {
+                contract_address: "0x00".to_owned(),
+                x: r00.to(),
+                y: r01.to(),
+                block: 0,
+            },
+        },
+        pool1: PoolSnapshot {
+            pool: winner.pair.pool1.pool,
+            reserve: Reserve {
+                contract_address: "0x01".to_owned(),
+                x: r10.to(),
+                y: r11.to(),
+                block: 1,
+            },
+        },
+    };
+    let fresh_match = trade_simulate(fresh_pair).unwrap();
+    println!("fresh profit: {}", fresh_match.scaled_profit());
 
     println!(
         "SWAP out0:{} out1:{} to: {} -> in1: {}",
@@ -277,7 +311,7 @@ impl Match {
             "{:0.4}{} profit:{:0.4}{} p0:{} #{} x0: {} y0: {} p1:{} #{} x1: {} y1: {}",
             self.pool0_ay_in as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
             self.pair.pool0.pool.coin1.symbol,
-            self.profit() as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
+            self.scaled_profit(),
             self.pair.pool0.pool.coin1.symbol,
             self.pair.pool0.pool.contract_address,
             self.pair.pool0.reserve.block,
