@@ -35,6 +35,7 @@ fn main() -> Result<(), postgres::Error> {
 
     let pools_count = rows_count(&mut db, "pools");
     let pairs = pairs_with(&mut db, WETH)?;
+    println!("sql finding matches...");
     let matches = matches(&mut db, &pairs);
     println!(
         "{} pools make {} pairs and {} matches for {}",
@@ -47,19 +48,21 @@ fn main() -> Result<(), postgres::Error> {
     for r#match in &matches {
         println!("{}", r#match.to_string())
     }
-    println!("===========================================================");
 
-    let winner = matches
+    let winners = matches
         .into_iter()
-        .find(|m| {
+        .filter(|m| {
             let scaled_profit = m.scaled_profit();
             m.pair.pool0.pool.coin1.contract_address == USDT
                 && scaled_profit > 1.0
                 && scaled_profit < 2.0
         })
-        .unwrap_or_else(|| panic!("no winner found"));
+        .collect::<Vec<Match>>();
 
-    maineth(winner);
+    for winner in winners {
+        println!("===========================================================");
+        maineth(winner);
+    }
 
     Ok(())
 }
