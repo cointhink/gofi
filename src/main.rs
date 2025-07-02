@@ -336,14 +336,15 @@ fn matches(db: &mut postgres::Client, pairs: &Vec<postgres::Row>) -> Vec<Match> 
     let mut matches = vec![];
     for row in pairs {
         let pair = Pair::from_pair_row(db, &row);
-        if let Some(r#match) = trade_simulate(pair) {
+        let r#match = trade_simulate(pair);
+        if r#match.pool0_ay_in > 0 {
             matches.push(r#match);
         }
     }
     matches
 }
 
-fn trade_simulate(pair: Pair) -> Option<Match> {
+fn trade_simulate(pair: Pair) -> Match {
     // f(b) - f(a) == 0
     let oay_in = optimal_ay_in(
         pair.pool0.reserve.x,
@@ -352,20 +353,17 @@ fn trade_simulate(pair: Pair) -> Option<Match> {
         pair.pool1.reserve.y,
     );
 
-    if oay_in > 0.0 {
-        // trade simulation
-        let s1_adx = get_y_out(oay_in as u128, pair.pool0.reserve.y, pair.pool0.reserve.x);
-        let s2_ady = get_y_out(s1_adx, pair.pool1.reserve.x, pair.pool1.reserve.y);
-        // let profit = s2_ady - oay_in as u128;
-        let r#match = Match {
-            pair,
-            pool0_ay_in: oay_in as u128,
-            pool0_ax_out: s1_adx,
-            pool1_ay_out: s2_ady,
-        };
-        return Some(r#match);
+    // trade simulation
+    let s1_adx = get_y_out(oay_in as u128, pair.pool0.reserve.y, pair.pool0.reserve.x);
+    let s2_ady = get_y_out(s1_adx, pair.pool1.reserve.x, pair.pool1.reserve.y);
+    // let profit = s2_ady - oay_in as u128;
+
+    Match {
+        pair,
+        pool0_ay_in: oay_in as u128,
+        pool0_ax_out: s1_adx,
+        pool1_ay_out: s2_ady,
     }
-    None
 }
 
 fn pool(db: &mut postgres::Client, contract_address_in: &str) -> Pool {
