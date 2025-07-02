@@ -103,10 +103,9 @@ async fn maineth(winner: Match) {
     let weth = ERC20::new(WETH.parse().unwrap(), &provider);
     let weth_allowance = weth.allowance(public_key, uniswab).call().await.unwrap();
     println!(
-        "{} WETH: {} allowance: {}",
+        "{} WETH: {}",
         public_key,
         weth.balanceOf(public_key).call().await.unwrap(),
-        weth_allowance
     );
     if weth_allowance == U256::from(0) {
         let tx = weth
@@ -127,10 +126,9 @@ async fn maineth(winner: Match) {
         .await
         .unwrap();
     println!(
-        "{} USDT: {} allowance: {}",
+        "{} USDT: {}",
         public_key,
         usdt.balanceOf(public_key).call().await.unwrap(),
-        usdt_allowance
     );
     if usdt_allowance == U256::from(0) {
         let tx = usdt
@@ -234,6 +232,16 @@ async fn maineth(winner: Match) {
         "{} eth: {}",
         public_key,
         format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
+    );
+    println!(
+        "{} WETH: {}",
+        public_key,
+        weth.balanceOf(public_key).call().await.unwrap(),
+    );
+    println!(
+        "{} USDT: {}",
+        public_key,
+        usdt.balanceOf(public_key).call().await.unwrap(),
     );
 }
 
