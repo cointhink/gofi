@@ -196,7 +196,7 @@ async fn maineth(winner: Match) {
             },
         },
     };
-    let fresh_match = trade_simulate(fresh_pair).unwrap();
+    let fresh_match = trade_simulate(fresh_pair);
     println!("fresh profit: {}", fresh_match.scaled_profit());
 
     println!(
