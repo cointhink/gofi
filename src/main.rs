@@ -47,11 +47,12 @@ fn main() -> Result<(), postgres::Error> {
     for r#match in &matches {
         println!("{}", r#match.to_string())
     }
+    println!("===========================================================");
 
     let winner = matches
-        .iter()
+        .into_iter()
         .find(|m| {
-            let scaled_profit = m.profit() as f64 / 10_f64.powi(m.pair.pool0.pool.coin1.decimals);
+            let scaled_profit = m.scaled_profit();
             m.pair.pool0.pool.coin1.contract_address == USDT
                 && scaled_profit > 1.0
                 && scaled_profit < 2.0
@@ -80,7 +81,7 @@ sol!(
 );
 
 #[tokio::main]
-async fn maineth(winner: &Match) {
+async fn maineth(winner: Match) {
     let config = config::CONFIG.get().unwrap();
     let public_key: Address = config.public_key().parse().unwrap();
     let geth_url = Url::parse(&config.geth_url).unwrap();
@@ -145,12 +146,24 @@ async fn maineth(winner: &Match) {
         winner.pair.pool0.pool.contract_address.parse().unwrap(),
         &provider,
     );
-
-    let (r0, r1, btime) = pool0.getReserves().call().await.unwrap().into();
-    println!(
-        "fresh p0:{} r0: {} r1: {} btime: {}",
-        winner.pair.pool0.pool.contract_address, r0, r1, btime
+    let pool1 = UniswapV2Pair::new(
+        winner.pair.pool1.pool.contract_address.parse().unwrap(),
+        &provider,
     );
+
+    let (r00, r01, btime0) = pool0.getReserves().call().await.unwrap().into();
+    println!(
+        "fresh p0: {} r0: {} r1: {} btime: {}",
+        winner.pair.pool0.pool.contract_address, r00, r01, btime0
+    );
+    let (r10, r11, btime1) = pool1.getReserves().call().await.unwrap().into();
+    println!(
+        "fresh p1: {} r0: {} r1: {} btime: {}",
+        winner.pair.pool1.pool.contract_address, r10, r11, btime1
+    );
+    println!("winner profit: {}", winner.scaled_profit());
+    let fresh = trade_simulate(winner.pair).unwrap();
+    println!("fresh profit: {}", fresh.scaled_profit());
 
     println!(
         "SWAP out0:{} out1:{} to: {} -> in1: {}",
@@ -280,36 +293,45 @@ impl Match {
     pub fn profit(self: &Self) -> u128 {
         self.pool1_ay_out - self.pool0_ay_in
     }
+    pub fn scaled_profit(self: &Self) -> f64 {
+        self.profit() as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals)
+    }
 }
 
 fn matches(db: &mut postgres::Client, pairs: &Vec<postgres::Row>) -> Vec<Match> {
     let mut matches = vec![];
     for row in pairs {
         let pair = Pair::from_pair_row(db, &row);
-
-        // f(b) - f(a) == 0
-        let oay_in = optimal_ay_in(
-            pair.pool0.reserve.x,
-            pair.pool0.reserve.y,
-            pair.pool1.reserve.x,
-            pair.pool1.reserve.y,
-        );
-
-        if oay_in > 0.0 {
-            // trade simulation
-            let s1_adx = get_y_out(oay_in as u128, pair.pool0.reserve.y, pair.pool0.reserve.x);
-            let s2_ady = get_y_out(s1_adx, pair.pool1.reserve.x, pair.pool1.reserve.y);
-            // let profit = s2_ady - oay_in as u128;
-            let r#match = Match {
-                pair,
-                pool0_ay_in: oay_in as u128,
-                pool0_ax_out: s1_adx,
-                pool1_ay_out: s2_ady,
-            };
+        if let Some(r#match) = trade_simulate(pair) {
             matches.push(r#match);
         }
     }
     matches
+}
+
+fn trade_simulate(pair: Pair) -> Option<Match> {
+    // f(b) - f(a) == 0
+    let oay_in = optimal_ay_in(
+        pair.pool0.reserve.x,
+        pair.pool0.reserve.y,
+        pair.pool1.reserve.x,
+        pair.pool1.reserve.y,
+    );
+
+    if oay_in > 0.0 {
+        // trade simulation
+        let s1_adx = get_y_out(oay_in as u128, pair.pool0.reserve.y, pair.pool0.reserve.x);
+        let s2_ady = get_y_out(s1_adx, pair.pool1.reserve.x, pair.pool1.reserve.y);
+        // let profit = s2_ady - oay_in as u128;
+        let r#match = Match {
+            pair,
+            pool0_ay_in: oay_in as u128,
+            pool0_ax_out: s1_adx,
+            pool1_ay_out: s2_ady,
+        };
+        return Some(r#match);
+    }
+    None
 }
 
 fn pool(db: &mut postgres::Client, contract_address_in: &str) -> Pool {
