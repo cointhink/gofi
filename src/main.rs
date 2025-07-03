@@ -441,7 +441,7 @@ fn pairs_with(
     base_token: &str,
 ) -> Result<Vec<postgres::Row>, postgres::Error> {
     let sql = "WITH latest_reserves AS
-              (SELECT contract_address, block_number, x,y, ROW_NUMBER() OVER(PARTITION BY contract_address ORDER BY block_number)
+              (SELECT contract_address, block_number, x,y, ROW_NUMBER() OVER(PARTITION BY contract_address ORDER BY block_number desc)
                 FROM reserves ORDER BY contract_address, block_number)
               SELECT p1.contract_address as p1_contract_address,
                      p1.token0 as p1_token0,
