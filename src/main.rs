@@ -224,11 +224,13 @@ async fn maineth(winner: &Match) {
         config.public_key(),
         winner.pool0_ay_in,
     );
-    let swab_tx = uniswab.swab(
-        U256::from(winner.pool0_ax_out),
-        Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
-        Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
-    );
+    let swab_tx = uniswab
+        .swab(
+            U256::from(winner.pool0_ax_out),
+            Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
+            Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
+        )
+        .gas(250000);
     let swab_txr = swab_tx.clone().into_transaction_request();
     // println!(
     // "swabbing with gas:{} gas_price:{}",
