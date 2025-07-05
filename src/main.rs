@@ -96,6 +96,7 @@ async fn maineth(winner: &Match) {
     let pk_signer: PrivateKeySigner = config.eth_priv_key.parse().unwrap();
     let provider = ProviderBuilder::new()
         .wallet(pk_signer)
+        .with_gas_estimation()
         .connect_http(geth_url.clone());
     let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
 
