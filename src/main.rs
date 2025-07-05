@@ -47,8 +47,9 @@ fn main() -> Result<(), postgres::Error> {
     );
 
     for r#match in &matches {
-        if r#match. > 0.01 {}
-        println!("{}", r#match.to_string())
+        if r#match.scaled_profit() > 0.01 {
+            println!("{}", r#match.to_string())
+        }
     }
 
     let winners = matches
