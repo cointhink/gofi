@@ -150,17 +150,13 @@ async fn maineth(winner: &Match) {
     }
 
     println!("winner: {}", winner.to_string());
-    let wtime0_str =
-        DateTime::from_timestamp(winner.pair.pool0.reserve.block_timestamp as i64, 0).unwrap();
-    let wtime1_str =
-        DateTime::from_timestamp(winner.pair.pool1.reserve.block_timestamp as i64, 0).unwrap();
     println!(
         "winner p0: {} r0: {} r1: {} block: {} {}",
         winner.pair.pool0.pool.contract_address,
         winner.pair.pool0.reserve.x,
         winner.pair.pool0.reserve.y,
         winner.pair.pool0.reserve.block_number,
-        wtime0_str,
+        winner.pair.pool0.reserve.block_time_str(),
     );
     println!(
         "winner p1: {} r0: {} r1: {} block: {} {}",
@@ -168,8 +164,9 @@ async fn maineth(winner: &Match) {
         winner.pair.pool1.reserve.x,
         winner.pair.pool1.reserve.y,
         winner.pair.pool1.reserve.block_number,
-        wtime1_str,
+        winner.pair.pool1.reserve.block_time_str(),
     );
+
     // let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
     let pool0 = UniswapV2Pair::new(
         winner.pair.pool0.pool.contract_address.parse().unwrap(),
@@ -225,15 +222,13 @@ async fn maineth(winner: &Match) {
         config.public_key(),
         winner.pool0_ay_in,
     );
-    uniswab
-        .swab(
-            U256::from(winner.pool0_ax_out),
-            Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
-            Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
-        )
-        .call()
-        .await
-        .unwrap();
+    let swab_tx = uniswab.swab(
+        U256::from(winner.pool0_ax_out),
+        Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
+        Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
+    );
+    let swab_tx_receipt = swab_tx.send().await.unwrap().get_receipt().await.unwrap();
+    println!("swab tx {}", swab_tx_receipt.transaction_hash);
 
     println!(
         "{} eth: {}",
