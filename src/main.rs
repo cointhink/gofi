@@ -57,12 +57,12 @@ fn main() -> Result<(), postgres::Error> {
         .filter(|m| {
             let scaled_profit = m.scaled_profit();
             m.pair.pool0.pool.coin1.contract_address == USDT
-                && scaled_profit > 1.0
+                && scaled_profit > 0.03
                 && scaled_profit < 2.0
         })
         .collect::<Vec<Match>>();
 
-    for winner in winners {
+    for winner in winners[0..0].into_iter() {
         println!("===========================================================");
         maineth(winner);
     }
@@ -87,7 +87,7 @@ sol!(
 );
 
 #[tokio::main]
-async fn maineth(winner: Match) {
+async fn maineth(winner: &Match) {
     let config = config::CONFIG.get().unwrap();
     let public_key: Address = config.public_key().parse().unwrap();
     let geth_url = Url::parse(&config.geth_url).unwrap();
