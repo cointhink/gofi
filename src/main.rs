@@ -8,6 +8,7 @@ use alloy::{
     transports::http::reqwest::Url,
 };
 use chrono::DateTime;
+use hex::decode;
 use postgres::{Client, NoTls};
 
 mod config;
@@ -95,7 +96,7 @@ async fn maineth(winner: &Match) {
     let provider = ProviderBuilder::new()
         .wallet(pk_signer)
         .connect_http(geth_url.clone());
-    let uniswab = config.uniswab.parse().unwrap();
+    let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
 
     println!(
         "{} eth: {}",
@@ -103,7 +104,11 @@ async fn maineth(winner: &Match) {
         format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
     );
     let weth = ERC20::new(WETH.parse().unwrap(), &provider);
-    let weth_allowance = weth.allowance(public_key, uniswab).call().await.unwrap();
+    let weth_allowance = weth
+        .allowance(public_key, uniswab.address().clone())
+        .call()
+        .await
+        .unwrap();
     println!(
         "{} WETH: {}",
         public_key,
@@ -111,7 +116,7 @@ async fn maineth(winner: &Match) {
     );
     if weth_allowance == U256::from(0) {
         let tx = weth
-            .approve(uniswab, U256::MAX)
+            .approve(uniswab.address().clone(), U256::MAX)
             .send()
             .await
             .unwrap()
@@ -134,7 +139,7 @@ async fn maineth(winner: &Match) {
     );
     if usdt_allowance == U256::from(0) {
         let tx = usdt
-            .approve(uniswab, U256::MAX)
+            .approve(uniswab.address().clone(), U256::MAX)
             .send()
             .await
             .unwrap()
@@ -220,15 +225,15 @@ async fn maineth(winner: &Match) {
         config.public_key(),
         winner.pool0_ay_in,
     );
-    // uniswab
-    //     .swab(
-    //         U256::from(winner.pool0_ax_out),
-    //         Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
-    //         Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
-    //     )
-    //     .call()
-    //     .await
-    //     .unwrap();
+    uniswab
+        .swab(
+            U256::from(winner.pool0_ax_out),
+            Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
+            Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
+        )
+        .call()
+        .await
+        .unwrap();
 
     println!(
         "{} eth: {}",
