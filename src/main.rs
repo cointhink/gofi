@@ -26,6 +26,7 @@ fn main() -> Result<(), postgres::Error> {
     config::CONFIG
         .set(config::read_type(config::FILENAME))
         .unwrap();
+    tracing_subscriber::fmt::init();
 
     let config = config::CONFIG.get().unwrap();
     let mut db = Client::connect(&config.pg_url, NoTls)?;
