@@ -190,7 +190,7 @@ async fn maineth(winner: &Match) {
     println!("winner profit: {}", winner.scaled_profit());
     let fresh_pair = Pair {
         pool0: PoolSnapshot {
-            pool: winner.pair.pool0.pool,
+            pool: winner.pair.pool0.pool.clone(),
             reserve: Reserve {
                 contract_address: "0x00".to_owned(),
                 x: r00.to(),
@@ -200,7 +200,7 @@ async fn maineth(winner: &Match) {
             },
         },
         pool1: PoolSnapshot {
-            pool: winner.pair.pool1.pool,
+            pool: winner.pair.pool1.pool.clone(),
             reserve: Reserve {
                 contract_address: "0x01".to_owned(),
                 x: r10.to(),
@@ -247,6 +247,7 @@ async fn maineth(winner: &Match) {
     );
 }
 
+#[derive(Clone)]
 struct Pool {
     contract_address: String,
     coin0: Coin,
@@ -266,6 +267,7 @@ impl Pool {
     }
 }
 
+#[derive(Clone)]
 struct Coin {
     contract_address: String,
     symbol: String,
