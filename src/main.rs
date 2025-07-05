@@ -229,11 +229,11 @@ async fn maineth(winner: &Match) {
         Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
     );
     let swab_txr = swab_tx.clone().into_transaction_request();
-    println!(
-        "swabbing with gas:{} gas_price:{}",
-        swab_txr.gas.unwrap(),
-        swab_txr.gas_price.unwrap()
-    );
+    // println!(
+    // "swabbing with gas:{} gas_price:{}",
+    // swab_txr.gas.unwrap(),
+    // swab_txr.gas_price.unwrap()
+    // );
     let swab_tx_receipt = swab_tx.send().await.unwrap().get_receipt().await.unwrap();
     println!("swab tx {}", swab_tx_receipt.transaction_hash);
 
