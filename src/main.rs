@@ -47,6 +47,7 @@ fn main() -> Result<(), postgres::Error> {
     );
 
     for r#match in &matches {
+        if r#match. > 0.01 {}
         println!("{}", r#match.to_string())
     }
 
@@ -333,19 +334,19 @@ struct Match {
 impl Match {
     pub fn to_string(self: &Self) -> String {
         format!(
-            "{:0.4}{} profit:{:0.4}{} p0:{} #{} x0: {} y0: {} p1:{} #{} x1: {} y1: {}",
+            "{:0.4}{} profit:{:0.4}{} p0:{} #{} p1:{} #{} ",
             self.pool0_ay_in as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
             self.pair.pool0.pool.coin1.symbol,
             self.scaled_profit(),
             self.pair.pool0.pool.coin1.symbol,
             self.pair.pool0.pool.contract_address,
             self.pair.pool0.reserve.block_number,
-            self.pair.pool0.reserve.x as f64 / 10_f64.powi(self.pair.pool0.pool.coin0.decimals),
-            self.pair.pool0.reserve.y as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
+            //self.pair.pool0.reserve.x as f64 / 10_f64.powi(self.pair.pool0.pool.coin0.decimals),
+            //self.pair.pool0.reserve.y as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
             self.pair.pool1.pool.contract_address,
             self.pair.pool1.reserve.block_number,
-            self.pair.pool1.reserve.x as f64 / 10_f64.powi(self.pair.pool1.pool.coin0.decimals),
-            self.pair.pool1.reserve.y as f64 / 10_f64.powi(self.pair.pool1.pool.coin1.decimals),
+            //self.pair.pool1.reserve.x as f64 / 10_f64.powi(self.pair.pool1.pool.coin0.decimals),
+            //self.pair.pool1.reserve.y as f64 / 10_f64.powi(self.pair.pool1.pool.coin1.decimals),
         )
     }
 
