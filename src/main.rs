@@ -62,7 +62,7 @@ fn main() -> Result<(), postgres::Error> {
         })
         .collect::<Vec<Match>>();
 
-    for winner in winners[0..0].into_iter() {
+    for winner in winners[0..1].into_iter() {
         println!("===========================================================");
         maineth(winner);
     }
@@ -299,6 +299,11 @@ impl Reserve {
             block_timestamp: pool_timestamp as u32,
         }
     }
+    pub fn block_time_str(self: &Self) -> String {
+        DateTime::from_timestamp(self.block_timestamp as i64, 0)
+            .unwrap()
+            .to_string()
+    }
 }
 
 struct PoolSnapshot {
@@ -343,11 +348,11 @@ impl Match {
             self.scaled_profit(),
             self.pair.pool0.pool.coin1.symbol,
             self.pair.pool0.pool.contract_address,
-            self.pair.pool0.reserve.block_number,
+            self.pair.pool0.reserve.block_time_str(),
             //self.pair.pool0.reserve.x as f64 / 10_f64.powi(self.pair.pool0.pool.coin0.decimals),
             //self.pair.pool0.reserve.y as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
             self.pair.pool1.pool.contract_address,
-            self.pair.pool1.reserve.block_number,
+            self.pair.pool1.reserve.block_time_str(),
             //self.pair.pool1.reserve.x as f64 / 10_f64.powi(self.pair.pool1.pool.coin0.decimals),
             //self.pair.pool1.reserve.y as f64 / 10_f64.powi(self.pair.pool1.pool.coin1.decimals),
         )
