@@ -265,14 +265,12 @@ struct Pool {
 }
 
 impl Pool {
-    pub fn from_pair_row(db: &mut postgres::Client, row: &postgres::Row, pool_digit: &str) -> Pool {
+    pub fn from_pair_row(row: &postgres::Row, pool_digit: &str) -> Pool {
         let pool_contract_address_0: &str = row.get(sql_field!("p{}_contract_address", pool_digit));
-        let pool_token0: &str = row.get(sql_field!("p{}_token0", pool_digit));
-        let pool_token1: &str = row.get(sql_field!("p{}_token1", pool_digit));
         Pool {
             contract_address: pool_contract_address_0.to_owned(),
-            coin0: coin(db, pool_token0),
-            coin1: coin(db, pool_token1),
+            coin0: Coin::from_pair_row(row, pool_digit, "0"),
+            coin1: Coin::from_pair_row(row, pool_digit, "1"),
         }
     }
 }
@@ -282,6 +280,20 @@ struct Coin {
     contract_address: String,
     symbol: String,
     decimals: i32,
+}
+
+impl Coin {
+    pub fn from_pair_row(row: &postgres::Row, pool_digit: &str, token_digit: &str) -> Coin {
+        let contract_address =
+            row.get(format!("p{}_token0_symbol{}", pool_digit, token_digit).as_str());
+        let symbol = row.get(format!("p{}_token0_symbol{}", pool_digit, token_digit).as_str());
+        let decimals = row.get(format!("p{}_token0_symbol{}", pool_digit, token_digit).as_str());
+        Coin {
+            contract_address,
+            symbol,
+            decimals,
+        }
+    }
 }
 
 struct Reserve {
@@ -329,12 +341,12 @@ struct Pair {
 impl Pair {
     pub fn from_pair_row(db: &mut postgres::Client, row: &postgres::Row) -> Pair {
         let pool0 = PoolSnapshot {
-            pool: Pool::from_pair_row(db, row, "1"),
+            pool: Pool::from_pair_row(row, "1"),
             reserve: Reserve::from_pair_row(row, "1"),
         };
 
         let pool1 = PoolSnapshot {
-            pool: Pool::from_pair_row(db, row, "2"),
+            pool: Pool::from_pair_row(row, "2"),
             reserve: Reserve::from_pair_row(row, "2"),
         };
 
@@ -468,6 +480,14 @@ fn pairs_with(
                      p2.contract_address as p2_contract_address,
                      p2.token0 as p2_token0,
                      p2.token1 as p2_token1,
+                     p1c0.symbol as p1_token0_symbol,
+                     p1c1.symbol as p1_token1_symbol,
+                     p2c0.symbol as p2_token0_symbol,
+                     p2c1.symbol as p2_token1_symbol,
+                     p1c0.symbol as p1_token0_decimals,
+                     p1c1.symbol as p1_token1_decimals,
+                     p2c0.symbol as p2_token0_decimals,
+                     p2c1.symbol as p2_token1_decimals,
                      lrp1.x as qty_x1, lrp2.x AS qty_x2, lrp1.block_number AS p1_block_number,
                      lrp1.y as qty_y1, lrp2.y AS qty_y2, lrp2.block_number AS p2_block_number,
                      lrp1b.timestamp as p1_block_timestamp,
@@ -481,6 +501,10 @@ fn pairs_with(
               JOIN latest_reserves AS lrp2 ON p2.contract_address = lrp2.contract_address AND lrp2.row_number = 1
               JOIN blocks as lrp1b ON lrp1b.number = lrp1.block_number
               JOIN blocks as lrp2b ON lrp2b.number = lrp2.block_number
+              JOIN coins as p1c0 ON p1c0.contract_address = p1.token0
+              JOIN coins as p1c1 ON p1c1.contract_address = p1.token1
+              JOIN coins as p2c0 ON p2c0.contract_address = p2.token0
+              JOIN coins as p2c1 ON p2c1.contract_address = p2.token1
               WHERE (lrp1.x::decimal/lrp1.y::decimal) > (lrp2.x::decimal/lrp2.y::decimal)
               ORDER BY value desc";
 
