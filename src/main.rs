@@ -277,9 +277,9 @@ struct Coin {
 impl Coin {
     pub fn from_pair_row(row: &postgres::Row, pool_digit: &str, token_digit: &str) -> Coin {
         let contract_address =
-            row.get(format!("p{}_token0_symbol{}", pool_digit, token_digit).as_str());
-        let symbol = row.get(format!("p{}_token0_symbol{}", pool_digit, token_digit).as_str());
-        let decimals = row.get(format!("p{}_token0_symbol{}", pool_digit, token_digit).as_str());
+            row.get(format!("p{}_token{}_symbol", pool_digit, token_digit).as_str());
+        let symbol = row.get(format!("p{}_token{}_symbol", pool_digit, token_digit).as_str());
+        let decimals = row.get(format!("p{}_token{}_decimals", pool_digit, token_digit).as_str());
         Coin {
             contract_address,
             symbol,
