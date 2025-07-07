@@ -59,7 +59,7 @@ fn main() -> Result<(), postgres::Error> {
         .filter(|m| {
             let scaled_profit = m.scaled_profit();
             m.pair.pool0.pool.coin1.contract_address == USDT
-                && scaled_profit > 0.03
+                && scaled_profit > 0.02
                 && scaled_profit < 2.0
         })
         .collect::<Vec<Match>>();
