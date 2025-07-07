@@ -276,8 +276,7 @@ struct Coin {
 
 impl Coin {
     pub fn from_pair_row(row: &postgres::Row, pool_digit: &str, token_digit: &str) -> Coin {
-        let contract_address =
-            row.get(format!("p{}_token{}_symbol", pool_digit, token_digit).as_str());
+        let contract_address = row.get(format!("p{}_token{}", pool_digit, token_digit).as_str());
         let symbol = row.get(format!("p{}_token{}_symbol", pool_digit, token_digit).as_str());
         let decimals = row.get(format!("p{}_token{}_decimals", pool_digit, token_digit).as_str());
         Coin {
@@ -476,10 +475,10 @@ fn pairs_with(
                      p1c1.symbol as p1_token1_symbol,
                      p2c0.symbol as p2_token0_symbol,
                      p2c1.symbol as p2_token1_symbol,
-                     p1c0.symbol as p1_token0_decimals,
-                     p1c1.symbol as p1_token1_decimals,
-                     p2c0.symbol as p2_token0_decimals,
-                     p2c1.symbol as p2_token1_decimals,
+                     p1c0.decimals as p1_token0_decimals,
+                     p1c1.decimals as p1_token1_decimals,
+                     p2c0.decimals as p2_token0_decimals,
+                     p2c1.decimals as p2_token1_decimals,
                      lrp1.x as qty_x1, lrp2.x AS qty_x2, lrp1.block_number AS p1_block_number,
                      lrp1.y as qty_y1, lrp2.y AS qty_y2, lrp2.block_number AS p2_block_number,
                      lrp1b.timestamp as p1_block_timestamp,
