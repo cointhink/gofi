@@ -51,19 +51,24 @@ fn main() -> Result<(), postgres::Error> {
         }
     }
 
+    let limit = 0.02;
     let winners = matches
         .into_iter()
         .filter(|m| {
             let scaled_profit = m.scaled_profit();
             m.pair.pool0.pool.coin1.contract_address == config.preferred_coin_token
-                && scaled_profit > 0.02
+                && scaled_profit > limit
                 && scaled_profit < 2.0
         })
         .collect::<Vec<Match>>();
 
-    for winner in winners[0..1].into_iter() {
-        println!("===========================================================");
-        maineth(winner);
+    if winners.len() > 0 {
+        for winner in winners[0..1].into_iter() {
+            println!("===========================================================");
+            maineth(winner);
+        }
+    } else {
+        println!("no winners over {}", limit);
     }
 
     Ok(())
