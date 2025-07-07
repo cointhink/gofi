@@ -472,15 +472,16 @@ fn pairs_with(
                      lrp1.y as qty_y1, lrp2.y AS qty_y2, lrp2.block_number AS p2_block_number,
                      lrp1b.timestamp as p1_block_timestamp,
                      lrp2b.timestamp as p2_block_timestamp,
-                     ABS((lrp1.x::decimal/lrp1.y::decimal) - (lrp2.x::decimal/lrp2.y::decimal))::float8 as spread,
+                     ((lrp1.x::decimal/lrp1.y::decimal) - (lrp2.x::decimal/lrp2.y::decimal))::float8 as spread,
                      (least(lrp1.x::decimal , lrp2.x::decimal ) *
-                       ABS((lrp1.x::decimal/lrp1.y::decimal) - (lrp2.x::decimal/lrp2.y::decimal)))::float8 as value
+                       ((lrp1.x::decimal/lrp1.y::decimal) - (lrp2.x::decimal/lrp2.y::decimal)))::float8 as value
               FROM pools AS p1
               JOIN pools AS p2 ON p1.token0 = p2.token0 AND p1.token1 = p2.token1 AND p1.contract_address != p2.contract_address AND p1.token0 = $1
               JOIN latest_reserves AS lrp1 ON p1.contract_address = lrp1.contract_address AND lrp1.row_number = 1
               JOIN latest_reserves AS lrp2 ON p2.contract_address = lrp2.contract_address AND lrp2.row_number = 1
               JOIN blocks as lrp1b ON lrp1b.number = lrp1.block_number
               JOIN blocks as lrp2b ON lrp2b.number = lrp2.block_number
+              WHERE (lrp1.x::decimal/lrp1.y::decimal) > (lrp2.x::decimal/lrp2.y::decimal)
               ORDER BY value desc";
 
     db.query(sql, &[&base_token])
