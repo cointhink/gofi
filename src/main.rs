@@ -217,36 +217,42 @@ async fn maineth(winner: &Match) {
     let fresh_match = trade_simulate(fresh_pair);
     println!("fresh profit: {}", fresh_match.scaled_profit());
 
-    println!(
-        "SWAP out0:{} out1:{} to: {} -> in1: {}",
-        winner.pool0_ax_out,
-        0,
-        config.public_key(),
-        winner.pool0_ay_in,
-    );
-    let swab_tx = uniswab.swab(
-        U256::from(winner.pool0_ax_out),
-        Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
-        Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
-    );
-    let swab_tx_receipt = swab_tx.send().await.unwrap().get_receipt().await.unwrap();
-    println!("swab tx {}", swab_tx_receipt.transaction_hash);
+    if winner.pair.pool0.reserve.x == fresh_match.pair.pool0.reserve.x
+        && winner.pair.pool0.reserve.y == fresh_match.pair.pool0.reserve.y
+        && winner.pair.pool1.reserve.x == fresh_match.pair.pool1.reserve.x
+        && winner.pair.pool1.reserve.y == fresh_match.pair.pool1.reserve.y
+    {
+        println!(
+            "SWAP out0:{} out1:{} to: {} -> in1: {}",
+            winner.pool0_ax_out,
+            0,
+            config.public_key(),
+            winner.pool0_ay_in,
+        );
+        let swab_tx = uniswab.swab(
+            U256::from(winner.pool0_ax_out),
+            Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
+            Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
+        );
+        let swab_tx_receipt = swab_tx.send().await.unwrap().get_receipt().await.unwrap();
+        println!("swab tx {}", swab_tx_receipt.transaction_hash);
 
-    println!(
-        "{} eth: {}",
-        public_key,
-        format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
-    );
-    println!(
-        "{} WETH: {}",
-        public_key,
-        Into::<f64>::into(weth.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
-    );
-    println!(
-        "{} USDT: {}",
-        public_key,
-        Into::<f64>::into(usdt.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(6),
-    );
+        println!(
+            "{} eth: {}",
+            public_key,
+            format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
+        );
+        println!(
+            "{} WETH: {}",
+            public_key,
+            Into::<f64>::into(weth.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
+        );
+        println!(
+            "{} USDT: {}",
+            public_key,
+            Into::<f64>::into(usdt.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(6),
+        );
+    }
 }
 
 #[derive(Clone)]
