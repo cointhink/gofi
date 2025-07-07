@@ -2,7 +2,7 @@
 
 use alloy::{
     primitives::{Address, U256, bytes::Buf, utils::format_units},
-    providers::{Provider, ProviderBuilder},
+    providers::{Provider, ProviderBuilder, WalletProvider},
     signers::local::PrivateKeySigner,
     sol,
     transports::http::reqwest::Url,
@@ -105,51 +105,18 @@ async fn maineth(winner: &Match) {
         public_key,
         format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
     );
-    let weth = ERC20::new(WETH.parse().unwrap(), &provider);
-    let weth_allowance = weth
-        .allowance(public_key, uniswab.address().clone())
-        .call()
-        .await
-        .unwrap();
-    println!(
-        "{} WETH: {}",
+    erc20_allow(
         public_key,
-        Into::<f64>::into(weth.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
-    );
-    if weth_allowance == U256::from(0) {
-        let tx = weth
-            .approve(uniswab.address().clone(), U256::MAX)
-            .send()
-            .await
-            .unwrap()
-            .get_receipt()
-            .await
-            .unwrap();
-        println!("weth allownace tx: {}", hex::encode(tx.transaction_hash));
-    }
-
-    let usdt = ERC20::new(USDT.parse().unwrap(), &provider);
-    let usdt_allowance = usdt
-        .allowance(public_key, config.uniswab.parse().unwrap())
-        .call()
-        .await
-        .unwrap();
-    println!(
-        "{} USDT: {}",
+        winner.pair.pool0.pool.contract_address.parse().unwrap(),
+        &provider,
+    )
+    .await;
+    erc20_allow(
         public_key,
-        Into::<f64>::into(usdt.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(6),
-    );
-    if usdt_allowance == U256::from(0) {
-        let tx = usdt
-            .approve(uniswab.address().clone(), U256::MAX)
-            .send()
-            .await
-            .unwrap()
-            .get_receipt()
-            .await
-            .unwrap();
-        println!("usdt allownace tx: {}", hex::encode(tx.transaction_hash));
-    }
+        winner.pair.pool1.pool.contract_address.parse().unwrap(),
+        &provider,
+    )
+    .await;
 
     println!("winner: {}", winner.to_string());
     println!(
@@ -245,13 +212,38 @@ async fn maineth(winner: &Match) {
         println!(
             "{} WETH: {}",
             public_key,
-            Into::<f64>::into(weth.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
+            Into::<f64>::into(pool0.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
         );
         println!(
             "{} USDT: {}",
             public_key,
-            Into::<f64>::into(usdt.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(6),
+            Into::<f64>::into(pool1.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(6),
         );
+    }
+}
+
+async fn erc20_allow<T: Provider>(owner_address: Address, spender_address: Address, provider: T) {
+    let pool0 = ERC20::new(spender_address, &provider);
+    let pool0_allowance = pool0
+        .allowance(owner_address, spender_address)
+        .call()
+        .await
+        .unwrap();
+    println!(
+        "{} WETH: {}",
+        owner_address,
+        Into::<f64>::into(pool0.balanceOf(owner_address).call().await.unwrap()) / 10_f64.powi(18),
+    );
+    if pool0_allowance == U256::from(0) {
+        let tx = pool0
+            .approve(spender_address, U256::MAX)
+            .send()
+            .await
+            .unwrap()
+            .get_receipt()
+            .await
+            .unwrap();
+        println!("weth allownace tx: {}", hex::encode(tx.transaction_hash));
     }
 }
 
