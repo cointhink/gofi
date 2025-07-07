@@ -9,7 +9,7 @@ arch := $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 $(info arch $(arch))
 solc_bin_url := https://binaries.soliditylang.org/
 
-all: dirs $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
+all: dirs $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts)) $(artifacts_dir)/WETH9.bin
 
 dirs: | $(artifacts_dir) $(library_dir) $(library_dir)/v2-core-1.0.1 $(library_dir)/openzeppelin-contracts-5.3.0 $(bin_dir)/solc-0.5.16
 
@@ -21,6 +21,10 @@ swab: $(artifacts_dir)/UniSwab.bin
 
 deploy: $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
 	./deploy_uniswap.sh
+
+$(artifacts_dir)/WETH9.bin:
+	@test $${ETHERSCAN_KEY?ETHERSCAN_KEY missing}"  #
+	@echo -n $(shell curl 'https://api.etherscan.io/v2/api?chainid=1&module=contract&action=getcontractcreation&contractaddresses=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&tag=latest&apikey=${ETHERSCAN_KEY}' | jq -r '.result[0].creationBytecode' | sed 's/^0x//' ) > $@ 
 
 $(artifacts_dir)/%.bin: $(contracts_dir)/%.sol
 	./bin/solc-latest --overwrite --abi --bin --base-path . --include-path library -o artifacts $<
@@ -47,6 +51,8 @@ $(bin_dir)/solc-0.5.16:
 	chmod 755 ./bin/solc-0.5.16
 	./bin/solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Pair.sol
 	./bin/solc-0.5.16 --overwrite --abi --bin -o artifacts library/v2-core-1.0.1/contracts/UniswapV2Factory.sol
+
+$(bin_dir)/solc-latest:
 	wget --quiet -O bin/solc-latest $(solc_bin_url)linux-$(arch)/$(shell curl https://binaries.soliditylang.org/linux-$(arch)/list.json | jq '.releases[.latestRelease]')
 	chmod 755 ./bin/solc-latest
 

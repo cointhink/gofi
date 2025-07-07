@@ -5,6 +5,9 @@ hat2=$(eth address:show hat2 | jq -r '.["*"].address')
 echo hat2: ${hat2}
 
 echo #################################################
+# WETH deploy
+WETH=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/WETH9.bin | jq -r .address)
+echo WETH: ${WETH}
 # ERC20 deploy
 USDONA=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/UsDonA.bin | jq -r .address)
 echo USDONA: ${USDONA}
