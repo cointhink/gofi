@@ -14,6 +14,8 @@ pub struct Config {
     pub pg_url: String,
     pub eth_priv_key: String,
     pub uniswab: String,
+    pub preferred_base_token: String,
+    pub preferred_coin_token: String,
 }
 
 impl Config {

@@ -2,7 +2,7 @@
 
 use alloy::{
     primitives::{Address, U256, bytes::Buf, utils::format_units},
-    providers::{Provider, ProviderBuilder, WalletProvider},
+    providers::{Provider, ProviderBuilder},
     signers::local::PrivateKeySigner,
     sol,
     transports::http::reqwest::Url,
@@ -12,9 +12,6 @@ use hex::decode;
 use postgres::{Client, NoTls};
 
 mod config;
-
-const WETH: &str = "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-const USDT: &str = "dac17f958d2ee523a2206206994597c13d831ec7";
 
 macro_rules! sql_field {
     ($name:expr, $digit:expr) => {
@@ -37,7 +34,7 @@ fn main() -> Result<(), postgres::Error> {
     );
 
     let pools_count = rows_count(&mut db, "pools");
-    let pairs = pairs_with(&mut db, WETH)?;
+    let pairs = pairs_with(&mut db, &config.preferred_base_token)?;
     println!("sql finding matches...");
     let matches = matches(&pairs);
     println!(
@@ -45,7 +42,7 @@ fn main() -> Result<(), postgres::Error> {
         pools_count,
         pairs.len(),
         matches.len(),
-        WETH
+        config.preferred_base_token
     );
 
     for r#match in &matches {
@@ -58,7 +55,7 @@ fn main() -> Result<(), postgres::Error> {
         .into_iter()
         .filter(|m| {
             let scaled_profit = m.scaled_profit();
-            m.pair.pool0.pool.coin1.contract_address == USDT
+            m.pair.pool0.pool.coin1.contract_address == config.preferred_coin_token
                 && scaled_profit > 0.02
                 && scaled_profit < 2.0
         })
@@ -91,32 +88,54 @@ sol!(
 #[tokio::main]
 async fn maineth(winner: &Match) {
     let config = config::CONFIG.get().unwrap();
-    let public_key: Address = config.public_key().parse().unwrap();
     let geth_url = Url::parse(&config.geth_url).unwrap();
     let pk_signer: PrivateKeySigner = config.eth_priv_key.parse().unwrap();
+    let public_key = pk_signer.address();
     let provider = ProviderBuilder::new()
         .wallet(pk_signer)
         .with_gas_estimation()
         .connect_http(geth_url.clone());
     let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
+    let coin0 = ERC20::new(
+        winner
+            .pair
+            .pool0
+            .pool
+            .coin1
+            .contract_address
+            .parse()
+            .unwrap(),
+        &provider,
+    );
+    let coin1 = ERC20::new(
+        winner
+            .pair
+            .pool0
+            .pool
+            .coin1
+            .contract_address
+            .parse()
+            .unwrap(),
+        &provider,
+    );
 
     println!(
         "{} eth: {}",
         public_key,
         format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
     );
-    erc20_allow(
+    erc20_allow(&public_key, uniswab.address(), &coin0).await;
+    println!(
+        "{} coin0: {}",
         public_key,
-        winner.pair.pool0.pool.contract_address.parse().unwrap(),
-        &provider,
-    )
-    .await;
-    erc20_allow(
+        Into::<f64>::into(coin0.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
+    );
+    erc20_allow(&public_key, uniswab.address(), &coin0).await;
+    println!(
+        "{} coin1: {}",
         public_key,
-        winner.pair.pool1.pool.contract_address.parse().unwrap(),
-        &provider,
-    )
-    .await;
+        Into::<f64>::into(coin1.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
+    );
 
     println!("winner: {}", winner.to_string());
     println!(
@@ -222,21 +241,20 @@ async fn maineth(winner: &Match) {
     }
 }
 
-async fn erc20_allow<T: Provider>(owner_address: Address, spender_address: Address, provider: T) {
-    let pool0 = ERC20::new(spender_address, &provider);
-    let pool0_allowance = pool0
-        .allowance(owner_address, spender_address)
+async fn erc20_allow<T: Provider>(
+    owner_address: &Address,
+    spender_address: &Address,
+    coin: &ERC20::ERC20Instance<T>,
+) {
+    println!("owner:{} spender: {}", owner_address, spender_address);
+    let pool0_allowance = coin
+        .allowance(*owner_address, *spender_address)
         .call()
         .await
         .unwrap();
-    println!(
-        "{} WETH: {}",
-        owner_address,
-        Into::<f64>::into(pool0.balanceOf(owner_address).call().await.unwrap()) / 10_f64.powi(18),
-    );
     if pool0_allowance == U256::from(0) {
-        let tx = pool0
-            .approve(spender_address, U256::MAX)
+        let tx = coin
+            .approve(*spender_address, U256::MAX)
             .send()
             .await
             .unwrap()
