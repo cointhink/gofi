@@ -23,8 +23,7 @@ deploy: $(patsubst %.sol,$(artifacts_dir)/%.bin,$(contracts))
 	./deploy_uniswap.sh
 
 $(artifacts_dir)/WETH9.bin:
-	@test $${ETHERSCAN_KEY?ETHERSCAN_KEY missing}"  #
-	@echo -n $(shell curl 'https://api.etherscan.io/v2/api?chainid=1&module=contract&action=getcontractcreation&contractaddresses=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&tag=latest&apikey=${ETHERSCAN_KEY}' | jq -r '.result[0].creationBytecode' | sed 's/^0x//' ) > $@ 
+	cp $(library_dir)/WETH9.bin $@
 
 $(artifacts_dir)/%.bin: $(contracts_dir)/%.sol
 	./bin/solc-latest --overwrite --abi --bin --base-path . --include-path library -o artifacts $<
