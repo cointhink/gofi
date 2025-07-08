@@ -238,14 +238,19 @@ async fn maineth(winner: &Match) {
             format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
         );
         println!(
-            "{} WETH: {}",
+            "{} {}: {}",
             public_key,
-            Into::<f64>::into(pool0.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
+            winner.pair.pool0.pool.coin0.symbol,
+            Into::<f64>::into(coin0.balanceOf(public_key).call().await.unwrap())
+                / 10_f64.powi(winner.pair.pool0.pool.coin0.decimals),
         );
+        erc20_allow(&public_key, uniswab.address(), &coin1).await;
         println!(
-            "{} USDT: {}",
+            "{} {}: {}",
             public_key,
-            Into::<f64>::into(pool1.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(6),
+            winner.pair.pool0.pool.coin1.symbol,
+            Into::<f64>::into(coin1.balanceOf(public_key).call().await.unwrap())
+                / 10_f64.powi(winner.pair.pool0.pool.coin1.decimals),
         );
     } else {
         println!("swap aborted. freshness check failed");
