@@ -131,14 +131,16 @@ async fn maineth(winner: &Match) {
     );
     erc20_allow(&public_key, uniswab.address(), &coin0).await;
     println!(
-        "{} coin0: {}",
+        "{} {}: {}",
         public_key,
+        winner.pair.pool0.pool.coin0.symbol,
         Into::<f64>::into(coin0.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
     );
-    erc20_allow(&public_key, uniswab.address(), &coin0).await;
+    erc20_allow(&public_key, uniswab.address(), &coin1).await;
     println!(
-        "{} coin1: {}",
+        "{} {}: {}",
         public_key,
+        winner.pair.pool0.pool.coin1.symbol,
         Into::<f64>::into(coin1.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(18),
     );
 
@@ -243,6 +245,8 @@ async fn maineth(winner: &Match) {
             public_key,
             Into::<f64>::into(pool1.balanceOf(public_key).call().await.unwrap()) / 10_f64.powi(6),
         );
+    } else {
+        println!("swap aborted. freshness check failed");
     }
 }
 
@@ -251,13 +255,19 @@ async fn erc20_allow<T: Provider>(
     spender_address: &Address,
     coin: &ERC20::ERC20Instance<T>,
 ) {
-    println!("owner:{} spender: {}", owner_address, spender_address);
-    let pool0_allowance = coin
+    let allowance = coin
         .allowance(*owner_address, *spender_address)
         .call()
         .await
         .unwrap();
-    if pool0_allowance == U256::from(0) {
+    println!(
+        "erc20: {} owner:{} spender: {} allowance: {}",
+        coin.address(),
+        owner_address,
+        spender_address,
+        allowance,
+    );
+    if allowance == U256::from(0) {
         let tx = coin
             .approve(*spender_address, U256::MAX)
             .send()
