@@ -106,7 +106,7 @@ async fn maineth(winner: &Match) {
             .pair
             .pool0
             .pool
-            .coin1
+            .coin0
             .contract_address
             .parse()
             .unwrap(),
