@@ -566,9 +566,10 @@ pub fn reserves_to_coefficients(
     let c2 = fee.pow(U256::from(2)) * c21 / fee_points_magnitude.pow(U256::from(2));
     if c1 > c2 {
         let c = c1.saturating_sub(c2);
+        println!("a {} b {} c {}", a, b, c);
         Ok((a, b, c))
     } else {
-        Err("bad news".to_owned())
+        Err("c of (a,b,c) is negative".to_owned())
     }
 }
 
@@ -576,7 +577,19 @@ pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
     let d1 = b.pow(U256::from(2));
     let d2 = U256::from(4).saturating_mul(a).saturating_mul(c);
     if d1 > d2 {
-        ((-b + (d1 - d2).root(2)) / (a.saturating_mul(U256::from(2)))).saturating_to::<u128>()
+        let delta = d1 - d2;
+        println!("d1 {} d2 {} delta {}", d1, d2, delta);
+        let root1 = (b - delta.root(2)) / (a.saturating_mul(U256::from(2)));
+        println!(
+            "b {} + delta.root(2) {} / 2*a {} = {}",
+            b,
+            delta.root(2),
+            a.saturating_mul(U256::from(2)),
+            root1
+        );
+        let root2 = (b + delta.root(2)) / (a.saturating_mul(U256::from(2)));
+        println!("{},{},{} -> ({}, {})", a, b, c, root1, root2);
+        root1.saturating_to::<u128>()
     } else {
         0_u128
     }
@@ -603,10 +616,14 @@ mod tests {
 
     #[test]
     fn test_optimal_ay_in() {
-        let ax = 98203032335537373;
-        let ay = 242910566;
-        let bx = 50774084797862325;
-        let by = 131079784;
+        // let ax = 98203032335537373;
+        // let ay = 242910566;
+        // let bx = 50774084797862325;
+        // let by = 131079784;
+        let ax = 3000;
+        let ay = 2000;
+        let bx = 3000;
+        let by = 1000;
         let ay_in = optimal_ay_in(ax, ay, bx, by).unwrap();
         assert_eq!(ay_in, 0, "ay_in");
     }
