@@ -439,13 +439,13 @@ fn trade_simulate(pair: Pair) -> Match {
     );
 
     // trade simulation
-    let s1_adx = get_y_out(oay_in as u128, pair.pool0.reserve.y, pair.pool0.reserve.x);
+    let s1_adx = get_y_out(oay_in, pair.pool0.reserve.y, pair.pool0.reserve.x);
     let s2_ady = get_y_out(s1_adx, pair.pool1.reserve.x, pair.pool1.reserve.y);
     // let profit = s2_ady - oay_in as u128;
 
     Match {
         pair,
-        pool0_ay_in: oay_in as u128,
+        pool0_ay_in: oay_in,
         pool0_ax_out: s1_adx,
         pool1_ay_out: s2_ady,
     }
@@ -540,22 +540,49 @@ fn pairs_with(
     db.query(sql, &[&base_token])
 }
 
-pub fn optimal_ay_in(ax: u128, ay: u128, bx: u128, by: u128) -> f64 {
-    const POOL_FEE: f64 = 1.0 - 0.003;
-    let k = POOL_FEE * bx as f64 + POOL_FEE.powi(2) * ax as f64;
-    let a = k.powi(2);
-    let b = 2.0 * k * ay as f64 * bx as f64;
-    let c = (ay as f64 * bx as f64).powi(2)
-        - POOL_FEE.powi(2) * ax as f64 * bx as f64 * ay as f64 * by as f64;
+pub fn optimal_ay_in(ax: u128, ay: u128, bx: u128, by: u128) -> u128 {
+    const POOL_FEE_BASIS_POINTS: u8 = 30;
+    let (a, b, c) = reserves_to_coefficients(ax, ay, bx, by, POOL_FEE_BASIS_POINTS);
     quadratic_root(a, b, c)
 }
 
-pub fn quadratic_root(a: f64, b: f64, c: f64) -> f64 {
-    let d = b.powi(2) - 4.0 * a * c;
-    if d > 0.0 {
-        return (-b + d.sqrt()) / (2.0 * a);
+pub fn reserves_to_coefficients(
+    ax: u128,
+    ay: u128,
+    bx: u128,
+    by: u128,
+    fee_points: u8,
+) -> (U256, U256, U256) {
+    let fee_points_magnitude = U256::from(10000);
+    let fee = fee_points_magnitude - U256::from(fee_points);
+    let k = U256::from(bx)
+        .saturating_mul(fee)
+        .wrapping_div(U256::from(fee_points_magnitude))
+        + fee.pow(U256::from(2))
+            * U256::from(ax).wrapping_div(U256::from(fee_points_magnitude * fee_points_magnitude));
+    println!("k {} ({})", k, k.log10());
+    let a = k * k;
+    let b = k
+        .saturating_mul(U256::from(2))
+        .saturating_mul(U256::from(ay))
+        .saturating_mul(U256::from(bx));
+    let c = (U256::from(ay).saturating_mul(U256::from(bx))).pow(U256::from(2))
+        - fee
+            .saturating_mul(fee)
+            .saturating_mul(U256::from(ax))
+            .saturating_mul(U256::from(bx))
+            .saturating_mul(U256::from(ay))
+            .saturating_mul(U256::from(by));
+    (a, b, c)
+}
+
+pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
+    let d1 = b.pow(U256::from(2));
+    let d2 = U256::from(4).saturating_mul(a).saturating_mul(c);
+    if d1 > d2 {
+        ((-b + (d1 - d2).root(2)) / (a.saturating_mul(U256::from(2)))).saturating_to::<u128>()
     } else {
-        return 0.0;
+        0_u128
     }
 }
 
@@ -576,5 +603,21 @@ mod tests {
         let x = 100;
         let y = 50;
         assert_eq!(get_y_out(dx, x, y), 4)
+    }
+    #[test]
+    fn test_reserves_to_coefficients() {
+        //winner: 1.5432USDT profit:0.0286USDT p0:cbc5bde09fb89220e961415d2098b40860fd352a #2025-07-04 19:45:23 UTC p1:5b8fbba724afc16bee3eb0a4af9953fd023dcb09 #2025-07-03 06:01:23
+        //winner p0: cbc5bde09fb89220e961415d2098b40860fd352a r0: 98203032335537373 r1: 242910566 block: 22848029 2025-07-04 19:45:23 UTC
+        //winner p1: 5b8fbba724afc16bee3eb0a4af9953fd023dcb09 r0: 50774084797862325 r1: 131079784 block: 22836777 2025-07-03 06:01:23 UTC
+
+        let fee_points = 30;
+        let ax = 98203032335537373;
+        let ay = 242910566;
+        let bx = 50774084797862325;
+        let by = 131079784;
+        let (a, b, c) = reserves_to_coefficients(ax, ay, bx, by, fee_points);
+        assert_eq!(a, U256::from(1), "a");
+        assert_eq!(b, U256::from(1), "b");
+        assert_eq!(c, U256::from(1), "c");
     }
 }
