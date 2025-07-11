@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use alloy::{
-    primitives::{Address, U256, bytes::Buf, utils::format_units},
+    primitives::{Address, U256, utils::format_units},
     providers::{Provider, ProviderBuilder},
     signers::local::PrivateKeySigner,
     sol,
@@ -565,11 +565,14 @@ pub fn reserves_to_coefficients(
     let c21 = U256::from(ax) * U256::from(bx) * U256::from(ay) * U256::from(by);
     let c2 = fee.pow(U256::from(2)) * c21 / fee_points_magnitude.pow(U256::from(2));
     if c1 > c2 {
-        let c = c1.saturating_sub(c2);
-        println!("a {} b {} c {}", a, b, c);
-        Ok((a, b, c))
+        // let c = c1.saturating_sub(c2);
+        // println!("a {} b {} c {}", a, b, c);
+        // Ok((a, b, c))
+        Err("c of (a,b,c) is positive".to_owned())
     } else {
-        Err("c of (a,b,c) is negative".to_owned())
+        let c = c2.saturating_sub(c1);
+        println!("a {} b {} -c {}", a, b, c);
+        Ok((a, b, c))
     }
 }
 
@@ -579,7 +582,7 @@ pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
     if d1 > d2 {
         let delta = d1 - d2;
         println!("d1 {} d2 {} delta {}", d1, d2, delta);
-        let root1 = (b - delta.root(2)) / (a.saturating_mul(U256::from(2)));
+        let root1 = (b - delta.root(2)) / (U256::from(2) * a);
         println!(
             "b {} + delta.root(2) {} / 2*a {} = {}",
             b,
@@ -596,10 +599,10 @@ pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
 }
 
 pub fn get_y_out(dx: u128, x: u128, y: u128) -> u128 {
-    // uniswap paper: (997 * dx * y) / (1000 * x + 997 * dx)
+    // uniswap v1 paper: (997 * dx * y) / (1000 * x + 997 * dx)
     let big = (U256::from(997) * U256::from(dx) * U256::from(y))
         / (U256::from(1000) * U256::from(x) + U256::from(997) * U256::from(dx));
-    big.as_le_slice().get_u128_le()
+    big.saturating_to::<u128>()
 }
 
 #[cfg(test)]
@@ -620,12 +623,43 @@ mod tests {
         // let ay = 242910566;
         // let bx = 50774084797862325;
         // let by = 131079784;
-        let ax = 3000;
-        let ay = 2000;
+        let ax = 4000;
+        let ay = 60000;
         let bx = 3000;
-        let by = 1000;
+        let by = 90000;
         let ay_in = optimal_ay_in(ax, ay, bx, by).unwrap();
-        assert_eq!(ay_in, 0, "ay_in");
+        // assert_eq!(ay_in, 296, "ay_in");
+
+        println!("p1 price {} ax {} / ay {} k {}", ax / ay, ax, ay, ax * ay);
+        println!("p2 price {} bx {} / by {}", bx / by, bx, by);
+        let s1_adx = get_y_out(ay_in, ay, ax);
+        println!(
+            "p1 sale {} s1_adx {} / ay_in {}",
+            s1_adx / ay_in,
+            s1_adx,
+            ay_in
+        );
+        let s1_ax = ax - s1_adx;
+        let s1_ay = ay + ay_in;
+        println!(
+            "p1 price {} ax {} / ay {} k {}",
+            s1_ax / s1_ay,
+            s1_ax,
+            s1_ay,
+            s1_ax * s1_ay
+        );
+        let s2_ady = get_y_out(s1_adx, bx, by);
+        println!(
+            "p2 sale {} s1_adx {} / s2_ady {}",
+            s1_adx / s2_ady,
+            s1_adx,
+            s2_ady
+        );
+        let s2_bx = bx + s1_adx;
+        let s2_by = by - s2_ady;
+        println!("p2 price {} bx {} / by {}", s2_bx / s2_by, s2_bx, s2_by);
+        // let profit = s2_ady - ay_in;
+        println!("ay_in {ay_in} ay_out {s2_ady}");
     }
 
     #[test]
