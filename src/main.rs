@@ -571,7 +571,7 @@ pub fn reserves_to_coefficients(
         Err("c of (a,b,c) is positive".to_owned())
     } else {
         let c = c2.saturating_sub(c1);
-        println!("a {} b {} -c {}", a, b, c);
+        // println!("a {} b {} -c {}", a, b, c);
         Ok((a, b, c))
     }
 }
@@ -581,17 +581,17 @@ pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
     let d2 = U256::from(4).saturating_mul(a).saturating_mul(c);
     if d1 > d2 {
         let delta = d1 - d2;
-        println!("d1 {} d2 {} delta {}", d1, d2, delta);
+        // println!("d1 {} d2 {} delta {}", d1, d2, delta);
         let root1 = (b - delta.root(2)) / (U256::from(2) * a);
-        println!(
-            "b {} + delta.root(2) {} / 2*a {} = {}",
-            b,
-            delta.root(2),
-            a.saturating_mul(U256::from(2)),
-            root1
-        );
+        // println!(
+        //     "b {} + delta.root(2) {} / 2*a {} = {}",
+        //     b,
+        //     delta.root(2),
+        //     a.saturating_mul(U256::from(2)),
+        //     root1
+        // );
         let root2 = (b + delta.root(2)) / (a.saturating_mul(U256::from(2)));
-        println!("{},{},{} -> ({}, {})", a, b, c, root1, root2);
+        // println!("{},{},{} -> ({}, {})", a, b, c, root1, root2);
         root1.saturating_to::<u128>()
     } else {
         0_u128
