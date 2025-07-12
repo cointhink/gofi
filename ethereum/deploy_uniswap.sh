@@ -54,9 +54,8 @@ echo USDC balance for pool `eth contract:call dpcoin@${USDONC} 'balanceOf("'${PO
 echo pool mint to ${hat1}
 eth contract:send --pk hat1 uniswap-v2-pair@${POOL} 'mint("'${hat1}'")'
 eth contract:call uniswap-v2-pair@${POOL} 'getReserves()'
-
 }
 
-pool 320000 220000
-pool 210000 310000
+pool 210000 310000 #price: 0.667
+pool 320000 220000 #price: 1.454
 
