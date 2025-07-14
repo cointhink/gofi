@@ -47,9 +47,7 @@ fn main() -> Result<(), postgres::Error> {
     );
 
     for r#match in &matches {
-        if r#match.scaled_profit() > 0.01 {
-            println!("{}", r#match.to_string())
-        }
+        println!("{}", r#match.to_string())
     }
 
     let limit = 0.02;

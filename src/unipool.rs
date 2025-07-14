@@ -24,10 +24,10 @@ pub fn reserves_to_coefficients(
     // b = 2k*ya*xb
     let b = k * U256::from(2) * U256::from(ay) * U256::from(bx);
     // c = (ya*xb)^2 - (1-f)^2*xa*ya*xb*yb
-    let c1 = (U256::from(ay) * U256::from(bx)).pow(U256::from(2));
-    let c21 = U256::from(ax) * U256::from(bx) * U256::from(ay) * U256::from(by);
+    let c1 = U256::from(ay) * U256::from(ay) * U256::from(bx) * U256::from(bx);
+    let c21 = U256::from(ax) * U256::from(ay) * U256::from(bx) * U256::from(by);
     let c2 = fee.pow(U256::from(2)) * c21 / fee_points_magnitude.pow(U256::from(2));
-    println!("c1 {} ({}) c2 {} ({})", c1, c1.log10(), c2, c2.log10());
+    println!("c1 {} ({}) c2 {} ({})", c1, c1.log10(), c2, c2.log10(),);
     if c1 > c2 {
         // let c = c1.saturating_sub(c2);
         // println!("a {} b {} c {}", a, b, c);
@@ -45,24 +45,20 @@ pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
     let d1 = b.pow(U256::from(2));
     let d2 = U256::from(4) * a * c;
     println!("d1 {} ({}) d2 {} ({})", d1, d1.log10(), d2, d2.log10());
-    if d1 < d2 {
-        let delta = d2 - d1;
-        // println!("d1 {} d2 {} delta {}", d1, d2, delta);
-        // -b +- sqrt(delta) / 2a
-        let root1 = (b - delta.root(2)) / (U256::from(2) * a);
-        let root2 = (b + delta.root(2)) / (U256::from(2) * a);
-        println!(
-            "b {} + delta.root(2) {} / 2*a {} = {}",
-            b,
-            delta.root(2),
-            a * U256::from(2),
-            root1
-        );
-        println!("{},{},{} -> ({}, {})", a, b, c, root1, root2);
-        root1.saturating_to::<u128>()
-    } else {
-        0_u128
-    }
+    let delta = d1 + d2;
+    // println!("d1 {} d2 {} delta {}", d1, d2, delta);
+    // -b +- sqrt(delta) / 2a
+    let root1 = (delta.root(2).saturating_sub(b)) / (U256::from(2) * a);
+    let root2 = (b + delta.root(2)) / (U256::from(2) * a);
+    println!(
+        "b {} + delta.root(2) {} / 2*a {} = {}",
+        b,
+        delta.root(2),
+        a * U256::from(2),
+        root1
+    );
+    println!("{},{},{} -> ({}, {})", a, b, c, root1, root2);
+    root1.saturating_to::<u128>()
 }
 
 pub fn get_y_out(dx: u128, x: u128, y: u128) -> u128 {
@@ -75,6 +71,19 @@ pub fn get_y_out(dx: u128, x: u128, y: u128) -> u128 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_quadratic_root() {
+        // -b +- sqrt(b^2 - 4ac) / 2a
+        // delta = b^2 - 4ac
+        // a real root exists when b^2 > 4ac
+        // 340,-690,340 = (0.84258, 1.1868) # wolframalpha
+        let a = U256::from(1);
+        let b = U256::from(338318);
+        let c = U256::from(169);
+        let root = quadratic_root(a, b, c);
+        assert_eq!(338317, root);
+    }
 
     #[test]
     fn test_get_y_out() {
@@ -111,7 +120,7 @@ mod tests {
         );
 
         let ay_in = optimal_ay_in(ax, ay, bx, by).unwrap();
-        assert_eq!(ay_in, 55485, "ay_in");
+        assert_eq!(ay_in, 40371, "ay_in");
 
         let s1_adx = get_y_out(ay_in, ay, ax);
         println!(
