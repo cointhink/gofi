@@ -23,6 +23,6 @@ echo USDONA for pool1 = $COIN
 
 balances
 # SWAB!
-echo SWAB 34485 #55485
+echo SWAB 55485
 eth contract:send --pk hat2 uniswab@${SWAB} 'swab(55485, "'${POOL0}'", "'${POOL1}'")'
 balances

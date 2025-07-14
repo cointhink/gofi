@@ -36,13 +36,13 @@ pool() {
 echo #################################################
 # UNISWAP FACTORY deploy
 FACTORY=$(eth contract:deploy -n hardhat --pk hat1 --abi uniswap-v2-factory --args [\"${hat1}\"]  ./artifacts/UniswapV2Factory.bin | jq -r .address )
-echo uniswap v2 FACTORY ${FACTORY}
+echo hat1 deployed uniswap v2 FACTORY ${FACTORY}
 
 # UNISWAP A/C POOL #1 deploy
 #POOL=$(eth contract:deploy -n hardhat --pk hat1 ./artifacts/UniswapV2Pair.bin | jq -r .address )
 eth contract:send --pk hat1 uniswap-v2-factory@${FACTORY} 'createPair("'${USDONA}'","'${USDONC}'")' 
 POOL=$(eth contract:call uniswap-v2-factory@${FACTORY} 'getPair("'${USDONA}'","'${USDONC}'")' )
-echo uniswap v2 DEPLOYED $3 ${POOL}
+echo hat1 deployed uniswap v2 POOL $3 ${POOL}
 echo ${POOL} > logs/"$3"
 
 # Add USDONA
