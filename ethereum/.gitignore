@@ -2,4 +2,4 @@ artifacts/
 hardhat/
 library/
 bin/
-deploys/
+logs/
