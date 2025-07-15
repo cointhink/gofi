@@ -16,18 +16,23 @@ pub fn reserves_to_coefficients(
     let fee_points_magnitude = U256::from(10000);
     let fee = fee_points_magnitude - U256::from(fee_points);
     // k = (1-f)*xb + (1-f)^2*xa
+    // k is always positive
     let k1 = U256::from(bx) * fee / (U256::from(fee_points_magnitude));
     let k2 = fee.pow(U256::from(2)) * U256::from(ax) / (fee_points_magnitude.pow(U256::from(2)));
     let k = k1 + k2;
     // a = k^2
+    // a is always positive
     let a = k.pow(U256::from(2));
     // b = 2k*ya*xb
+    // b is always positive
     let b = k * U256::from(2) * U256::from(ay) * U256::from(bx);
     // c = (ya*xb)^2 - (1-f)^2*xa*ya*xb*yb
+    // c1 is always positive
     let c1 = U256::from(ay) * U256::from(ay) * U256::from(bx) * U256::from(bx);
     let c21 = U256::from(ax) * U256::from(ay) * U256::from(bx) * U256::from(by);
+    // c2 is always positive
     let c2 = fee.pow(U256::from(2)) * c21 / fee_points_magnitude.pow(U256::from(2));
-    println!("c1 {} ({}) c2 {} ({})", c1, c1.log10(), c2, c2.log10(),);
+    //println!("c1 {} ({}) c2 {} ({})", c1, c1.log10(), c2, c2.log10(),);
     if c1 > c2 {
         // let c = c1.saturating_sub(c2);
         // println!("a {} b {} c {}", a, b, c);
@@ -42,23 +47,26 @@ pub fn reserves_to_coefficients(
 
 pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
     // delta = b^2 - 4ac
+    // delta is always postiive because c is always negative
     let d1 = b.pow(U256::from(2));
     let d2 = U256::from(4) * a * c;
     println!("d1 {} ({}) d2 {} ({})", d1, d1.log10(), d2, d2.log10());
     let delta = d1 + d2;
-    // println!("d1 {} d2 {} delta {}", d1, d2, delta);
+    println!("d1 - d2 = delta {} ({})", delta, delta.log10());
     // -b +- sqrt(delta) / 2a
-    let root1 = (delta.root(2).saturating_sub(b)) / (U256::from(2) * a);
-    let root2 = (b + delta.root(2)) / (U256::from(2) * a);
+    // take only the positive root of delta, and b is always positive: squrt(delta) - b
+    // the sqrt of delta is always less than b (because c is always negative)
+    let root = (delta.root(2).saturating_sub(b)) / (U256::from(2) * a);
     println!(
-        "b {} + delta.root(2) {} / 2*a {} = {}",
-        b,
+        "delta.root(2) {}  - b {} ({}) / 2*a {} = {}",
         delta.root(2),
+        b,
+        delta.root(2).saturating_sub(b),
         a * U256::from(2),
-        root1
+        root
     );
-    println!("{},{},{} -> ({}, {})", a, b, c, root1, root2);
-    root1.saturating_to::<u128>()
+    println!("{},{},{} -> {}", a, b, c, root);
+    root.saturating_to::<u128>()
 }
 
 pub fn get_y_out(dx: u128, x: u128, y: u128) -> u128 {
@@ -77,12 +85,14 @@ mod tests {
         // -b +- sqrt(b^2 - 4ac) / 2a
         // delta = b^2 - 4ac
         // a real root exists when b^2 > 4ac
-        // 340,-690,340 = (0.84258, 1.1868) # wolframalpha
-        let a = U256::from(1);
-        let b = U256::from(338318);
-        let c = U256::from(169);
+        // a 278237260324 b 48739336800000000 -c 2421143007360000000000
+        // wolfram alpha: x≈-215543 x≈40371
+
+        let a = U256::from_str_radix("278237260324", 10).unwrap();
+        let b = U256::from_str_radix("48739336800000000", 10).unwrap();
+        let c = U256::from_str_radix("2421143007360000000000", 10).unwrap();
         let root = quadratic_root(a, b, c);
-        assert_eq!(338317, root);
+        assert_eq!(40371, root);
     }
 
     #[test]
@@ -95,10 +105,6 @@ mod tests {
 
     #[test]
     fn test_optimal_ay_in() {
-        // let ax = 4000;
-        // let ay = 60000;
-        // let bx = 3000;
-        // let by = 90000;
         let ax = 310000;
         let ay = 210000;
         let bx = 220000;
@@ -190,13 +196,21 @@ mod tests {
         //winner p1: 5b8fbba724afc16bee3eb0a4af9953fd023dcb09 r0: 50774084797862325 r1: 131079784 block: 22836777 2025-07-03 06:01:23 UTC
 
         let fee_points = 30;
-        let ax = 3000;
-        let ay = 2000;
-        let bx = 3000;
-        let by = 1000;
+        let ax = 310000;
+        let ay = 210000;
+        let bx = 220000;
+        let by = 320000;
         let (a, b, c) = reserves_to_coefficients(ax, ay, bx, by, fee_points).unwrap();
-        assert_eq!(a, U256::from_str_radix("35676729", 10).unwrap(), "a");
-        assert_eq!(b, U256::from_str_radix("71676000000", 10).unwrap(), "b");
-        assert_eq!(c, U256::from_str_radix("18107838000000", 10).unwrap(), "c");
+        assert_eq!(a, U256::from_str_radix("278237260324", 10).unwrap(), "a");
+        assert_eq!(
+            b,
+            U256::from_str_radix("48739336800000000", 10).unwrap(),
+            "b"
+        );
+        assert_eq!(
+            c,
+            U256::from_str_radix("2421143007360000000000", 10).unwrap(),
+            "c"
+        );
     }
 }
