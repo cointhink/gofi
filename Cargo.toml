@@ -2,6 +2,15 @@
 name = "gofi"
 version = "0.1.0"
 edition = "2024"
+default-run = "gofi"
+
+[[bin]]
+name = "gofi"
+path = "src/main.rs"
+
+[[bin]]
+name = "u2arb"
+path = "src/cli.rs"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }

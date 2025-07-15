@@ -430,13 +430,25 @@ fn matches(pairs: &Vec<postgres::Row>) -> Vec<Match> {
 }
 
 fn trade_simulate(pair: Pair) -> Result<Match, String> {
+    let ax = pair.pool0.reserve.x;
+    let ay = pair.pool0.reserve.y;
+    let bx = pair.pool1.reserve.x;
+    let by = pair.pool1.reserve.y;
+    println!(
+        "p1 price@s0 {} ax {} ay {} = k {}",
+        (ax * 100 / ay) as f64 / 100.0,
+        ax,
+        ay,
+        U256::from(ax) * U256::from(ay)
+    );
+    println!(
+        "p2 price@s0 {} k {}",
+        (bx * 100 / by) as f64 / 100.0,
+        U256::from(bx) * U256::from(by)
+    );
+
     // f(b) - f(a) == 0
-    let oay_in = unipool::optimal_ay_in(
-        pair.pool0.reserve.x,
-        pair.pool0.reserve.y,
-        pair.pool1.reserve.x,
-        pair.pool1.reserve.y,
-    )?;
+    let oay_in = unipool::optimal_ay_in(ax, ay, bx, by)?;
 
     // trade simulation
     let s1_adx = unipool::get_y_out(oay_in, pair.pool0.reserve.y, pair.pool0.reserve.x);
@@ -534,7 +546,6 @@ fn pairs_with(
               JOIN coins as p1c1 ON p1c1.contract_address = p1.token1
               JOIN coins as p2c0 ON p2c0.contract_address = p2.token0
               JOIN coins as p2c1 ON p2c1.contract_address = p2.token1
-              WHERE (lrp1.x::decimal/lrp1.y::decimal) > (lrp2.x::decimal/lrp2.y::decimal)
               ORDER BY value desc";
 
     db.query(sql, &[&base_token])
