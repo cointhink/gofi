@@ -9,11 +9,10 @@ use alloy::{
 };
 use chrono::DateTime;
 use hex::decode;
-use num_traits::ToPrimitive;
 use postgres::{Client, NoTls};
-use rust_decimal::Decimal;
 
 mod config;
+mod decimal;
 mod unipool;
 
 macro_rules! sql_field {
@@ -389,30 +388,7 @@ struct PoolSnapshot {
 
 impl PoolSnapshot {
     fn price(self: &Self) -> f64 {
-        let scaled_x = Self::scale(self.reserve.x, self.pool.coin0.decimals as i64);
-        let scaled_y = Self::scale(self.reserve.y, self.pool.coin1.decimals as i64);
-        let price = scaled_x / scaled_y;
-        price.to_f64().unwrap()
-    }
-
-    fn scale(num: u128, decimals: i64) -> Decimal {
-        let decimal_digits = num.ilog10();
-        if decimal_digits <= 18 {
-            Decimal::new(num as i64, decimals as u32)
-        } else {
-            let extra_digits = decimal_digits - 18;
-            let truncated_num = num / 10_u128.pow(extra_digits);
-            let d = Decimal::new(truncated_num as i64, decimals as u32 - extra_digits);
-            // println!(
-            //     "{} {}_2 {}_10 {}_decimals => {}",
-            //     num,
-            //     num.ilog2(),
-            //     num.ilog10(),
-            //     decimals,
-            //     d
-            // );
-            d
-        }
+        decimal::scale(self.reserve.y, self.reserve.x)
     }
 }
 

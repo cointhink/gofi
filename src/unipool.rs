@@ -1,6 +1,6 @@
-use alloy::primitives::U256;
+use alloy::primitives::{U256, U512};
 
-// x is the money. y is the product. ax/ay < bx/by means pool a is cheaper than pool b
+// x is the product. y is the money. ay/ax < by/bx means pool a is cheaper than pool b
 pub fn optimal_ay_in(ax: u128, ay: u128, bx: u128, by: u128) -> Result<u128, String> {
     const POOL_FEE_BASIS_POINTS: u8 = 30;
     let (a, b, c) = reserves_to_coefficients(ax, ay, bx, by, POOL_FEE_BASIS_POINTS)?;
@@ -34,9 +34,12 @@ pub fn reserves_to_coefficients(
     let c21 = U256::from(ax) * U256::from(ay) * U256::from(bx) * U256::from(by);
     // c2 is always positive
     let c2 = fee.pow(U256::from(2)) * c21 / fee_points_magnitude.pow(U256::from(2));
-    //println!("c1 {} ({}) c2 {} ({})", c1, c1.log10(), c2, c2.log10(),);
     if c1 > c2 {
-        Err("c of (a,b,c) is positive. pool a is more expensive than pool b. no arb.".to_owned())
+        if c1 < c21 {
+            Err("(a,b,c) no arb after fee".to_owned())
+        } else {
+            Err("(a,b,c) no arb.".to_owned())
+        }
     } else {
         let c = c2 - c1;
         println!("a {} b {} -c {}", a, b, c);
@@ -45,15 +48,36 @@ pub fn reserves_to_coefficients(
 }
 
 pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
+    let a = U512::from(a);
+    let b = U512::from(b);
+    let c = U512::from(c);
+    println!(
+        "a {} ({}) b {} ({}) c {} ({})",
+        a,
+        a.log2(),
+        b,
+        b.log2(),
+        c,
+        c.log2()
+    );
     // delta = b^2 - 4ac
     // delta is always postiive because c is always negative
-    let d1 = b.pow(U256::from(2));
-    let d2 = U256::from(4) * a * c;
+    let d1 = b.pow(U512::from(2));
+    let d2 = U512::from(4) * a * c;
     let delta = d1 + d2;
+    println!(
+        "delta {} ({}) = d1 {} ({}) +  d2 {} ({})",
+        delta,
+        delta.log2(),
+        d1,
+        d1.log2(),
+        d2,
+        d2.log2()
+    );
     // -b +- sqrt(delta) / 2a
     // take only the positive root of delta, and b is always positive: squrt(delta) - b
     // the sqrt of delta is always less than b (because c is always negative)
-    let root = (delta.root(2).saturating_sub(b)) / (U256::from(2) * a);
+    let root = (delta.root(2).saturating_sub(b)) / (U512::from(2) * a);
     println!("{},{},{} -> {}", a, b, c, root);
     root.saturating_to::<u128>()
 }
@@ -81,7 +105,15 @@ mod tests {
         let b = U256::from_str_radix("48739336800000000", 10).unwrap();
         let c = U256::from_str_radix("2421143007360000000000", 10).unwrap();
         let root = quadratic_root(a, b, c);
-        assert_eq!(40371, root);
+        assert_eq!(root, 40371);
+
+        // a 7010956849340041661775550609684450681 b 2719085318207604654461411506480024329673136 -c 1695220225124043972868953930979927881452999219
+        // wolfram alpha: x≈-388456 x≈622.45
+        let a = U256::from_str_radix("7010956849340041661775550609684450681", 10).unwrap();
+        let b = U256::from_str_radix("2719085318207604654461411506480024329673136", 10).unwrap();
+        let c = U256::from_str_radix("1695220225124043972868953930979927881452999219", 10).unwrap();
+        let root = quadratic_root(a, b, c);
+        assert_eq!(root, 622);
     }
 
     #[test]
@@ -155,31 +187,6 @@ mod tests {
 
     #[test]
     fn test_reserves_to_coefficients() {
-        //winner: 1.5432USDT profit:0.0286USDT p0:cbc5bde09fb89220e961415d2098b40860fd352a #2025-07-04 19:45:23 UTC p1:5b8fbba724afc16bee3eb0a4af9953fd023dcb09 #2025-07-03 06:01:23
-        //winner p0: cbc5bde09fb89220e961415d2098b40860fd352a r0: 98203032335537373 r1: 242910566 block: 22848029 2025-07-04 19:45:23 UTC
-        //winner p1: 5b8fbba724afc16bee3eb0a4af9953fd023dcb09 r0: 50774084797862325 r1: 131079784 block: 22836777 2025-07-03 06:01:23 UTC
-
-        let fee_points = 30;
-        let ax = 98203032335537373;
-        let ay = 242910566;
-        let bx = 50774084797862325;
-        let by = 131079784;
-        let (a, b, c) = reserves_to_coefficients(ax, ay, bx, by, fee_points).unwrap();
-        assert_eq!(
-            a,
-            U256::from_str_radix("21974048225209905743260320346616836", 10).unwrap(),
-            "a"
-        );
-        assert_eq!(
-            b,
-            U256::from_str_radix("3656567056833261232090410051780886244321400", 10).unwrap(),
-            "b"
-        );
-        assert_eq!(c, U256::from(0), "c");
-    }
-
-    #[test]
-    fn test_reserves_to_coefficients2() {
         //winner: 1.5432USDT profit:0.0286USDT p0:cbc5bde09fb89220e961415d2098b40860fd352a #2025-07-04 19:45:23 UTC p1:5b8fbba724afc16bee3eb0a4af9953fd023dcb09 #2025-07-03 06:01:23
         //winner p0: cbc5bde09fb89220e961415d2098b40860fd352a r0: 98203032335537373 r1: 242910566 block: 22848029 2025-07-04 19:45:23 UTC
         //winner p1: 5b8fbba724afc16bee3eb0a4af9953fd023dcb09 r0: 50774084797862325 r1: 131079784 block: 22836777 2025-07-03 06:01:23 UTC
