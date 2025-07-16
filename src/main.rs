@@ -9,7 +9,9 @@ use alloy::{
 };
 use chrono::DateTime;
 use hex::decode;
+use num_traits::ToPrimitive;
 use postgres::{Client, NoTls};
+use rust_decimal::Decimal;
 
 mod config;
 mod unipool;
@@ -35,9 +37,13 @@ fn main() -> Result<(), postgres::Error> {
     );
 
     let pools_count = rows_count(&mut db, "pools");
+    println!(
+        "sql finding pairs from {} pools where token0 = {}",
+        pools_count, &config.preferred_base_token
+    );
     let pairs = pairs_with(&mut db, &config.preferred_base_token)?;
-    println!("sql finding matches...");
-    let matches = matches(&pairs);
+    println!("{} pairs found", pairs.len());
+    let matches = simulate(&pairs);
     println!(
         "{} pools make {} pairs and {} matches for {}",
         pools_count,
@@ -47,7 +53,26 @@ fn main() -> Result<(), postgres::Error> {
     );
 
     for r#match in &matches {
-        println!("{}", r#match.to_string())
+        println!("{}", r#match.to_string());
+        let p1 = r#match.pair.pool0.price();
+        let p2 = r#match.pair.pool1.price();
+        println!(
+            "{} {} {} {} p1 {} (d{}/d{}) n{} p2 {} {} ",
+            r#match.pair.pool0.reserve.x,
+            r#match.pair.pool0.reserve.y,
+            r#match.pair.pool1.reserve.x,
+            r#match.pair.pool1.reserve.y,
+            p1,
+            r#match.pair.pool0.pool.coin0.decimals,
+            r#match.pair.pool0.pool.coin1.decimals,
+            r#match.pair.pool0.reserve.x / r#match.pair.pool0.reserve.y,
+            p2,
+            if p1 < p2 {
+                "POOL1 CHEAPER"
+            } else {
+                "POOL2 CHEAPER"
+            }
+        );
     }
 
     let limit = 0.02;
@@ -362,6 +387,35 @@ struct PoolSnapshot {
     reserve: Reserve,
 }
 
+impl PoolSnapshot {
+    fn price(self: &Self) -> f64 {
+        let scaled_x = Self::scale(self.reserve.x, self.pool.coin0.decimals as i64);
+        let scaled_y = Self::scale(self.reserve.y, self.pool.coin1.decimals as i64);
+        let price = scaled_x / scaled_y;
+        price.to_f64().unwrap()
+    }
+
+    fn scale(num: u128, decimals: i64) -> Decimal {
+        let decimal_digits = num.ilog10();
+        if decimal_digits <= 18 {
+            Decimal::new(num as i64, decimals as u32)
+        } else {
+            let extra_digits = decimal_digits - 18;
+            let truncated_num = num / 10_u128.pow(extra_digits);
+            let d = Decimal::new(truncated_num as i64, decimals as u32 - extra_digits);
+            // println!(
+            //     "{} {}_2 {}_10 {}_decimals => {}",
+            //     num,
+            //     num.ilog2(),
+            //     num.ilog10(),
+            //     decimals,
+            //     d
+            // );
+            d
+        }
+    }
+}
+
 struct Pair {
     pool0: PoolSnapshot,
     pool1: PoolSnapshot,
@@ -417,13 +471,13 @@ impl Match {
     }
 }
 
-fn matches(pairs: &Vec<postgres::Row>) -> Vec<Match> {
+fn simulate(pairs: &Vec<postgres::Row>) -> Vec<Match> {
     let mut matches = vec![];
     for row in pairs {
         let pair = Pair::from_pair_row(&row);
         match trade_simulate(pair) {
             Ok(r#match) => matches.push(r#match),
-            Err(_) => (),
+            Err(err) => println!("{}", err),
         }
     }
     matches
@@ -434,17 +488,23 @@ fn trade_simulate(pair: Pair) -> Result<Match, String> {
     let ay = pair.pool0.reserve.y;
     let bx = pair.pool1.reserve.x;
     let by = pair.pool1.reserve.y;
+    let p1 = pair.pool0.price();
+    let p2 = pair.pool1.price();
     println!(
-        "p1 price@s0 {} ax {} ay {} = k {}",
-        (ax * 100 / ay) as f64 / 100.0,
+        "{}1 price@s0 {} ax {} ay {} k {}",
+        if p1 < p2 { "P" } else { "p" },
+        p1,
         ax,
         ay,
-        U256::from(ax) * U256::from(ay)
+        U256::from(ax) * U256::from(ay),
     );
     println!(
-        "p2 price@s0 {} k {}",
-        (bx * 100 / by) as f64 / 100.0,
-        U256::from(bx) * U256::from(by)
+        "{}2 price@s0 {} bx {} by {} k {}",
+        if p1 > p2 { "P" } else { "p" },
+        p2,
+        bx,
+        by,
+        U256::from(bx) * U256::from(by),
     );
 
     // f(b) - f(a) == 0

@@ -1,5 +1,6 @@
 use alloy::primitives::U256;
 
+// x is the money. y is the product. ax/ay < bx/by means pool a is cheaper than pool b
 pub fn optimal_ay_in(ax: u128, ay: u128, bx: u128, by: u128) -> Result<u128, String> {
     const POOL_FEE_BASIS_POINTS: u8 = 30;
     let (a, b, c) = reserves_to_coefficients(ax, ay, bx, by, POOL_FEE_BASIS_POINTS)?;
@@ -13,6 +14,7 @@ pub fn reserves_to_coefficients(
     by: u128,
     fee_points: u8,
 ) -> Result<(U256, U256, U256), String> {
+    println!("{} {} {} {}", ax, ay, bx, by);
     let fee_points_magnitude = U256::from(10000);
     let fee = fee_points_magnitude - U256::from(fee_points);
     // k = (1-f)*xb + (1-f)^2*xa
@@ -34,10 +36,7 @@ pub fn reserves_to_coefficients(
     let c2 = fee.pow(U256::from(2)) * c21 / fee_points_magnitude.pow(U256::from(2));
     //println!("c1 {} ({}) c2 {} ({})", c1, c1.log10(), c2, c2.log10(),);
     if c1 > c2 {
-        // let c = c1.saturating_sub(c2);
-        // println!("a {} b {} c {}", a, b, c);
-        // Ok((a, b, c))
-        Err("c of (a,b,c) is positive".to_owned())
+        Err("c of (a,b,c) is positive. pool a is more expensive than pool b. no arb.".to_owned())
     } else {
         let c = c2 - c1;
         println!("a {} b {} -c {}", a, b, c);
@@ -50,21 +49,11 @@ pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
     // delta is always postiive because c is always negative
     let d1 = b.pow(U256::from(2));
     let d2 = U256::from(4) * a * c;
-    println!("d1 {} ({}) d2 {} ({})", d1, d1.log10(), d2, d2.log10());
     let delta = d1 + d2;
-    println!("d1 - d2 = delta {} ({})", delta, delta.log10());
     // -b +- sqrt(delta) / 2a
     // take only the positive root of delta, and b is always positive: squrt(delta) - b
     // the sqrt of delta is always less than b (because c is always negative)
     let root = (delta.root(2).saturating_sub(b)) / (U256::from(2) * a);
-    println!(
-        "delta.root(2) {}  - b {} ({}) / 2*a {} = {}",
-        delta.root(2),
-        b,
-        delta.root(2).saturating_sub(b),
-        a * U256::from(2),
-        root
-    );
     println!("{},{},{} -> {}", a, b, c, root);
     root.saturating_to::<u128>()
 }
