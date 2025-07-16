@@ -17,12 +17,16 @@ eth contract:call uniswap-v2-pair@${POOL1} 'getReserves()' | grep reserve
 
 COIN=`eth contract:call erc20@usdona 'balanceOf("'${POOL0}'")'`
 echo USDONA for pool0 = $COIN
-COIN=`eth contract:call erc20@usdonc 'balanceOf("'${POOL1}'")'`
+COIN=`eth contract:call erc20@usdonc 'balanceOf("'${POOL0}'")'`
+echo USDONC for pool0 = $COIN
+COIN=`eth contract:call erc20@usdona 'balanceOf("'${POOL1}'")'`
 echo USDONA for pool1 = $COIN
+COIN=`eth contract:call erc20@usdonc 'balanceOf("'${POOL1}'")'`
+echo USDONC for pool1 = $COIN
 }
 
 balances
 # SWAB!
-echo SWAB 55485
+echo swab\(40371, ${POOL0}, ${POOL1}\)
 eth contract:send --pk hat2 uniswab@${SWAB} 'swab(55485, "'${POOL0}'", "'${POOL1}'")'
 balances
