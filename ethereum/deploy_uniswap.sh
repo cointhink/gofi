@@ -10,6 +10,8 @@ WETH=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/WETH9.bin | 
 echo WETH: ${WETH}
 echo ${WETH} > logs/WETH
 # ERC20 deploy
+USDONA1=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/UsDonA.bin | jq -r .address)
+echo USDONA1: ${USDONA1} '(ignored)'
 USDONA=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/UsDonA.bin | jq -r .address)
 echo USDONA: ${USDONA}
 echo ${USDONA} > logs/USDONA
@@ -58,6 +60,6 @@ eth contract:send --pk hat1 uniswap-v2-pair@${POOL} 'mint("'${hat1}'")'
 eth contract:call uniswap-v2-pair@${POOL} 'getReserves()' | grep reserve
 }
 
-pool 210000 310000 AC1 #price: 0.667
-pool 320000 220000 AC2 #price: 1.454
+pool 310000 210000 AC1 #price: 0.667
+pool 220000 320000 AC2 #price: 1.454
 
