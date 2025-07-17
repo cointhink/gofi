@@ -181,8 +181,10 @@ mod tests {
             s2_by,
             s2_bx * s2_by
         );
-        // let profit = s2_ady - ay_in;
         println!("ay_in {ay_in} ay_out {s2_ady}");
+
+        let profit = s2_ady - ay_in;
+        assert_eq!(profit, 18608, "profit");
     }
 
     #[test]
