@@ -241,14 +241,13 @@ async fn maineth(winner: &Match) -> Result<(), String> {
         && winner.pair.pool1.reserve.y == fresh_match.pair.pool1.reserve.y
     {
         println!(
-            "SWAP out0:{} out1:{} to: {} -> in1: {}",
-            winner.pool0_ax_out,
-            0,
-            config.public_key(),
+            "SWAB {}, {}, {}",
             winner.pool0_ay_in,
+            &winner.pair.pool0.pool.contract_address,
+            &winner.pair.pool1.pool.contract_address,
         );
         let swab_tx = uniswab.swab(
-            U256::from(winner.pool0_ax_out),
+            U256::from(winner.pool0_ay_in),
             Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
             Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
         );
