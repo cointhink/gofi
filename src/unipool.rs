@@ -14,7 +14,6 @@ pub fn reserves_to_coefficients(
     by: u128,
     fee_points: u8,
 ) -> Result<(U256, U256, U256), String> {
-    println!("{} {} {} {}", ax, ay, bx, by);
     let fee_points_magnitude = U256::from(10000);
     let fee = fee_points_magnitude - U256::from(fee_points);
     // k = (1-f)*xb + (1-f)^2*xa
@@ -51,34 +50,25 @@ pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
     let a = U512::from(a);
     let b = U512::from(b);
     let c = U512::from(c);
-    println!(
-        "a {} ({}) b {} ({}) c {} ({})",
-        a,
-        a.log2(),
-        b,
-        b.log2(),
-        c,
-        c.log2()
-    );
     // delta = b^2 - 4ac
     // delta is always postiive because c is always negative
     let d1 = b.pow(U512::from(2));
     let d2 = U512::from(4) * a * c;
     let delta = d1 + d2;
-    println!(
-        "delta {} ({}) = d1 {} ({}) +  d2 {} ({})",
-        delta,
-        delta.log2(),
-        d1,
-        d1.log2(),
-        d2,
-        d2.log2()
-    );
     // -b +- sqrt(delta) / 2a
     // take only the positive root of delta, and b is always positive: squrt(delta) - b
     // the sqrt of delta is always less than b (because c is always negative)
     let root = (delta.root(2).saturating_sub(b)) / (U512::from(2) * a);
-    println!("{},{},{} -> {}", a, b, c, root);
+    println!(
+        "a {} ({}) b {} ({}) c {} ({}) -> {}",
+        a,
+        a.log2(),
+        b,
+        b.log2(),
+        c,
+        c.log2(),
+        root
+    );
     root.saturating_to::<u128>()
 }
 
