@@ -88,7 +88,7 @@ fn main() -> Result<(), postgres::Error> {
     if winners.len() > 0 {
         for winner in winners[0..1].into_iter() {
             println!("===========================================================");
-            let _ = maineth(winner);
+            maineth(winner).unwrap();
         }
     } else {
         println!("no winners over {}", limit);
