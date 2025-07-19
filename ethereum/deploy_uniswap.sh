@@ -26,13 +26,13 @@ eth abi:update dpcoin ./${artifacts_dir}/UsDonA.abi
 
 mint() {
 echo minting $2 USDONA@${USDONA} to $1
-eth contract:send --pk hat1 dpcoin@${USDONA} 'mint("'$1'", '$2' )'
+eth contract:send --pk hat1 dpcoin@${USDONA} 'mint("'$1'", "'$2'" )'
 echo minting $2 USDONC@${USDONC} to $1
-eth contract:send --pk hat1 dpcoin@${USDONC} 'mint("'$1'", '$2' )'
+eth contract:send --pk hat1 dpcoin@${USDONC} 'mint("'$1'", "'$2'" )'
 }
 
-mint $hat1 1000000
-mint $hat2 1000000
+mint $hat1 1105340744425943157500
+mint $hat2 1105340744425943157500
 
 pool() {
 echo #################################################
@@ -50,16 +50,20 @@ echo ${POOL} > logs/"$3"
 # Add USDONA
 echo hat1 USDA balance `eth contract:call dpcoin@${USDONA} 'balanceOf("'${hat1}'")'`
 echo transfer $1 USDONA to ${POOL}
-eth contract:send --pk hat1 dpcoin@${USDONA} 'transfer("'${POOL}'", '$1')'
+eth contract:send --pk hat1 dpcoin@${USDONA} 'transfer("'${POOL}'", "'$1'")'
 echo USDA balance for pool `eth contract:call dpcoin@${USDONA} 'balanceOf("'${POOL}'")'`
 echo transfer $2 USDONC to ${POOL}
-eth contract:send --pk hat1 dpcoin@${USDONC} 'transfer("'${POOL}'", '$2')'
+eth contract:send --pk hat1 dpcoin@${USDONC} 'transfer("'${POOL}'", "'$2'")'
 echo USDC balance for pool `eth contract:call dpcoin@${USDONC} 'balanceOf("'${POOL}'")'`
 echo pool mint to ${hat1}
 eth contract:send --pk hat1 uniswap-v2-pair@${POOL} 'mint("'${hat1}'")'
 eth contract:call uniswap-v2-pair@${POOL} 'getReserves()' | grep reserve
 }
 
-pool 310000 210000 AC1 #price: 0.667
-pool 220000 320000 AC2 #price: 1.454
+poolparty() {
+pool $1 $2 AC1
+pool $3 $4 AC2 
+}
 
+#poolparty 310000 210000 220000 320000 # prices 0.667, 1.454
+poolparty 11053407444259431575 39896272204 96794408650081838290 354112185748
