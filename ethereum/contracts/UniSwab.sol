@@ -48,7 +48,7 @@ contract UniSwab {
 
         // Step 2
         uint256 amount1Out = _swap0to1(amount0Out, IUniswapV2Pair(pool1_addr));
-        require(amount1Out > amount0Out, "UniSwab: no profit");
+        require(amount1Out > amount1In, "UniSwab: no profit");
     }
 
     // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
