@@ -155,20 +155,20 @@ async fn maineth(winner: &Match) -> Result<(), String> {
         format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
     );
     erc20_allow(&public_key, uniswab.address(), &coin0).await;
+    let coin0_balance_start = coin0.balanceOf(public_key).call().await.unwrap();
     println!(
         "{} {}: {}",
         public_key,
         winner.pair.pool0.pool.coin0.symbol,
-        Into::<f64>::into(coin0.balanceOf(public_key).call().await.unwrap())
-            / 10_f64.powi(winner.pair.pool0.pool.coin0.decimals),
+        Into::<f64>::into(coin0_balance_start) / 10_f64.powi(winner.pair.pool0.pool.coin0.decimals),
     );
     erc20_allow(&public_key, uniswab.address(), &coin1).await;
-    let coin1_balance = coin1.balanceOf(public_key).call().await.unwrap();
+    let coin1_balance_start = coin1.balanceOf(public_key).call().await.unwrap();
     println!(
         "{} {}: {}",
         public_key,
         winner.pair.pool0.pool.coin1.symbol,
-        Into::<f64>::into(coin1_balance) / 10_f64.powi(winner.pair.pool0.pool.coin1.decimals),
+        Into::<f64>::into(coin1_balance_start) / 10_f64.powi(winner.pair.pool0.pool.coin1.decimals),
     );
 
     println!("winner: {}", winner.to_string());
@@ -242,10 +242,14 @@ async fn maineth(winner: &Match) -> Result<(), String> {
         && winner.pair.pool1.reserve.x == fresh_match.pair.pool1.reserve.x
         && winner.pair.pool1.reserve.y == fresh_match.pair.pool1.reserve.y
     {
-        let swab_amt = cmp::min(coin1_balance.saturating_to::<u128>(), winner.pool0_ay_in);
-        println!(
-            "SWAB {}, {}, {}",
+        let swab_amt = cmp::min(
+            coin1_balance_start.saturating_to::<u128>(),
             winner.pool0_ay_in,
+        );
+        println!(
+            "SWAB {} ({}), {}, {}",
+            winner.pool0_ay_in,
+            swab_amt,
             &winner.pair.pool0.pool.contract_address,
             &winner.pair.pool1.pool.contract_address,
         );
@@ -300,13 +304,6 @@ async fn erc20_allow<T: Provider>(
         .call()
         .await
         .unwrap();
-    println!(
-        "erc20: {} owner:{} spender: {} allowance: {}",
-        coin.address(),
-        owner_address,
-        spender_address,
-        allowance,
-    );
     if allowance == U256::from(0) {
         let tx = coin
             .approve(*spender_address, U256::MAX)
@@ -316,7 +313,7 @@ async fn erc20_allow<T: Provider>(
             .get_receipt()
             .await
             .unwrap();
-        println!("weth allownace tx: {}", hex::encode(tx.transaction_hash));
+        println!("erc20 allownace tx: {}", hex::encode(tx.transaction_hash));
     }
 }
 
