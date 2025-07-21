@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::cmp;
+
 use alloy::{
     primitives::{Address, U256, utils::format_units},
     providers::{Provider, ProviderBuilder},
@@ -161,12 +163,12 @@ async fn maineth(winner: &Match) -> Result<(), String> {
             / 10_f64.powi(winner.pair.pool0.pool.coin0.decimals),
     );
     erc20_allow(&public_key, uniswab.address(), &coin1).await;
+    let coin1_balance = coin1.balanceOf(public_key).call().await.unwrap();
     println!(
         "{} {}: {}",
         public_key,
         winner.pair.pool0.pool.coin1.symbol,
-        Into::<f64>::into(coin1.balanceOf(public_key).call().await.unwrap())
-            / 10_f64.powi(winner.pair.pool0.pool.coin1.decimals),
+        Into::<f64>::into(coin1_balance) / 10_f64.powi(winner.pair.pool0.pool.coin1.decimals),
     );
 
     println!("winner: {}", winner.to_string());
@@ -240,6 +242,7 @@ async fn maineth(winner: &Match) -> Result<(), String> {
         && winner.pair.pool1.reserve.x == fresh_match.pair.pool1.reserve.x
         && winner.pair.pool1.reserve.y == fresh_match.pair.pool1.reserve.y
     {
+        let swab_amt = cmp::min(coin1_balance.saturating_to::<u128>(), winner.pool0_ay_in);
         println!(
             "SWAB {}, {}, {}",
             winner.pool0_ay_in,
@@ -247,7 +250,7 @@ async fn maineth(winner: &Match) -> Result<(), String> {
             &winner.pair.pool1.pool.contract_address,
         );
         let swab_tx = uniswab.swab(
-            U256::from(winner.pool0_ay_in),
+            U256::from(swab_amt),
             Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
             Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
         );
