@@ -251,7 +251,14 @@ async fn maineth(winner: &Match) -> Result<(), String> {
             Address::from_slice(&decode(&winner.pair.pool0.pool.contract_address).unwrap()),
             Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
         );
-        let swab_tx_receipt = swab_tx.send().await.unwrap().get_receipt().await.unwrap();
+        let swab_tx_receipt = swab_tx
+            .gas(250000)
+            .send()
+            .await
+            .unwrap()
+            .get_receipt()
+            .await
+            .unwrap();
         println!("swab tx {}", swab_tx_receipt.transaction_hash);
 
         println!(
