@@ -45,28 +45,32 @@ pub fn reserves_to_coefficients(
     }
 }
 
-pub fn quadratic_root(a: U256, b: U256, c: U256) -> u128 {
-    let a = U512::from(a);
-    let b = U512::from(b);
-    let c = U512::from(c);
+pub fn quadratic_root(pos_a: U256, pos_b: U256, neg_c: U256) -> u128 {
+    let a = U512::from(pos_a);
+    let b = U512::from(pos_b);
+    let c = U512::from(neg_c);
     // delta = b^2 - 4ac
-    // delta is always postiive because c is always negative
     let d1 = b.pow(U512::from(2));
+    // d1 is always positive
     let d2 = U512::from(4) * a * c;
+    // d2 is always negative because c is always negative (expressed here as UINT)
+    // delta is always postiive because c is always negative
+    // -neg + pos = pos + "neg":  b^2 + 4ac
     let delta = d1 + d2;
     // -b +- sqrt(delta) / 2a
-    // take only the positive root of delta, and b is always positive: squrt(delta) - b
-    // the sqrt of delta is always less than b (because c is always negative)
+    // sqrt(delta) is always larger than b because delta is b^2 plus a value
+    //
     let root = (delta.root(2).saturating_sub(b)) / (U512::from(2) * a);
     println!(
-        "a {} ({}) b {} ({}) c {} ({}) -> {}",
+        "+a {} ({}) +b {} ({}) -c {} ({}) -> {} ({})",
         a,
         a.log2(),
         b,
         b.log2(),
         c,
         c.log2(),
-        root
+        root,
+        root.log2()
     );
     root.saturating_to::<u128>()
 }
