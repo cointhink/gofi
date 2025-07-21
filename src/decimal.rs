@@ -11,21 +11,7 @@ pub(crate) fn scale(num_a: u128, num_b: u128) -> f64 {
     }
     let a = (num_a >> drop) as f64;
     let b = (num_b >> drop) as f64;
-    let result = a / b;
-    println!(
-        "xscale num_a {} ({}) num_b {} ({}) drop {} a {} ({}) b {} ({})  result {}",
-        num_a,
-        al2,
-        num_b,
-        bl2,
-        drop,
-        a,
-        a.log2(),
-        b,
-        b.log2(),
-        result
-    );
-    result
+    a / b
 }
 
 #[cfg(test)]
