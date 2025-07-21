@@ -149,10 +149,11 @@ async fn maineth(winner: &Match) -> Result<(), String> {
         &provider,
     );
 
+    let eth_balance_start = provider.get_balance(public_key).await.unwrap();
     println!(
         "{} eth: {}",
         public_key,
-        format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
+        format_units(eth_balance_start, 18).unwrap()
     );
     erc20_allow(&public_key, uniswab.address(), &coin0).await;
     let coin0_balance_start = coin0.balanceOf(public_key).call().await.unwrap();
@@ -247,9 +248,10 @@ async fn maineth(winner: &Match) -> Result<(), String> {
             winner.pool0_ay_in,
         );
         println!(
-            "SWAB {} ({}), {}, {}",
-            winner.pool0_ay_in,
+            "SWAB {} ({}/{}), {}, {}",
             swab_amt,
+            winner.pool0_ay_in,
+            coin1_balance_start,
             &winner.pair.pool0.pool.contract_address,
             &winner.pair.pool1.pool.contract_address,
         );
@@ -268,10 +270,12 @@ async fn maineth(winner: &Match) -> Result<(), String> {
             .unwrap();
         println!("swab tx {}", swab_tx_receipt.transaction_hash);
 
+        let eth_balance_end = provider.get_balance(public_key).await.unwrap();
         println!(
-            "{} eth: {}",
+            "{} eth: {} delta {}",
             public_key,
-            format_units(provider.get_balance(public_key).await.unwrap(), 18).unwrap()
+            format_units(eth_balance_end, 18).unwrap(),
+            format_units(eth_balance_end - eth_balance_start, 18).unwrap()
         );
         println!(
             "{} {}: {}",
