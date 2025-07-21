@@ -13,13 +13,28 @@ fn main() {
     let a_price = decimal::scale(ay, ax);
     let b_price = decimal::scale(by, bx);
     println!(
-        "a nieve price {} ({}) {} b nieve price {} ({}) {}",
+        "pool 0 price {} {}",
         a_price,
-        a_price.log10(),
         if a_price < b_price { "CHEAP" } else { "" },
+    );
+    println!(
+        "pool 1 price {} {}",
         b_price,
-        b_price.log10(),
         if a_price > b_price { "CHEAP" } else { "" },
     );
-    let _optimal = unipool::optimal_ay_in(ax, ay, bx, by).unwrap();
+    let oay_in = unipool::optimal_ay_in(ax, ay, bx, by).unwrap();
+    let s1_adx = unipool::get_y_out(oay_in, ay, ax);
+    println!(
+        "step 1 ay_in {} -> s1_adx {} price {}",
+        oay_in,
+        s1_adx,
+        decimal::scale(oay_in, s1_adx)
+    );
+    let s2_ady = unipool::get_y_out(s1_adx, bx, by);
+    println!(
+        "step 2 s1_adx {} -> s2_ady {} price {}",
+        s1_adx,
+        s2_ady,
+        decimal::scale(s2_ady, s1_adx)
+    );
 }

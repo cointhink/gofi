@@ -40,8 +40,7 @@ pub fn reserves_to_coefficients(
             Err("(a,b,c) no arb.".to_owned())
         }
     } else {
-        let c = c2 - c1;
-        println!("a {} b {} -c {}", a, b, c);
+        let c = c2 - c1; // -c
         Ok((a, b, c))
     }
 }
