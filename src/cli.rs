@@ -22,16 +22,22 @@ fn main() {
         b_price,
         if a_price > b_price { "CHEAP" } else { "" },
     );
-    let oay_in = unipool::optimal_ay_in(ax, ay, bx, by).unwrap();
-    let s1_adx = unipool::get_y_out(oay_in, ay, ax);
+    let mid_price = ((b_price - a_price) / 2.0) + a_price;
+    println!("mid_price {mid_price}");
+    let ay_in = if args.len() < 6 {
+        unipool::optimal_ay_in(ax, ay, bx, by).unwrap()
+    } else {
+        u128::from_str_radix(&args[5], 10).unwrap()
+    };
+    let s1_adx = unipool::get_y_out(ay_in, ay, ax);
     println!(
         "step 1 ay_in {} -> s1_adx {} price {}",
-        oay_in,
+        ay_in,
         s1_adx,
-        decimal::scale(oay_in, s1_adx)
+        decimal::scale(ay_in, s1_adx)
     );
     let s1_ax = ax - s1_adx;
-    let s1_ay = ay + oay_in;
+    let s1_ay = ay + ay_in;
     println!(
         "p0 price@s1 {} ax {} ay {} k {}",
         decimal::scale(s1_ay, s1_ax),
@@ -56,6 +62,6 @@ fn main() {
         s2_bx * s2_by
     );
 
-    let profit = s2_ady - oay_in;
-    println!("ay_in {oay_in} ay_out {s2_ady} -> profit {profit}");
+    let profit = s2_ady - ay_in;
+    println!("ay_in {ay_in} ay_out {s2_ady} -> profit {profit}");
 }

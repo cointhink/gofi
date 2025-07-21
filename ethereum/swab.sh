@@ -4,7 +4,6 @@ POOL0=$(cat logs/AC1)
 POOL1=$(cat logs/AC2)
 SWAB=$(cat logs/SWAB)
 
-echo shell $SHELL
 if [[ -z "$1" ]];
 then
 AY_IN=40371
@@ -17,7 +16,9 @@ COIN=`eth contract:call erc20@usdona 'balanceOf("'${HAT2}'")'`
 echo USDONA for HAT2 = $COIN
 COIN=`eth contract:call erc20@usdonc 'balanceOf("'${HAT2}'")'`
 echo USDONC for HAT2 = $COIN
+}
 
+reserves() {
 echo pool0 ${POOL0} reserves
 eth contract:call uniswap-v2-pair@${POOL0} 'getReserves()' | grep reserve
 eth contract:call uniswap-v2-pair@${POOL0} 'token0()'
@@ -37,9 +38,13 @@ COIN=`eth contract:call erc20@usdonc 'balanceOf("'${POOL1}'")'`
 echo USDONC for pool1 = $COIN
 }
 
-balances
+#balances
+STARTC=`eth contract:call erc20@usdonc 'balanceOf("'${HAT2}'")'`
 # SWAB!
 echo swab\(${AY_IN}, ${POOL0}, ${POOL1}\)
 eth contract:send --pk hat2 uniswab@${SWAB} 'swab('${AY_IN}', "'${POOL0}'", "'${POOL1}'")'
-balances
+#balances
+reserves
+ENDC=`eth contract:call erc20@usdonc 'balanceOf("'${HAT2}'")'`
+echo ay_in ${AY_IN} profit `calc "${ENDC} - ${STARTC}"`
 
