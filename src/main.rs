@@ -387,7 +387,14 @@ struct PoolSnapshot {
 
 impl PoolSnapshot {
     fn price(self: &Self) -> f64 {
-        decimal::scale(self.reserve.y, self.reserve.x)
+        let d0 = self.pool.coin0.decimals;
+        let d1 = self.pool.coin1.decimals;
+        let scale = decimal::scale(self.reserve.y, self.reserve.x);
+        if d0 > d1 {
+            scale * 10.0_f64.powf((d0 - d1) as f64)
+        } else {
+            scale / 10.0_f64.powf((d1 - d0) as f64)
+        }
     }
 }
 

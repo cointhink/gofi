@@ -62,7 +62,7 @@ pub fn quadratic_root(pos_a: U256, pos_b: U256, neg_c: U256) -> u128 {
     //
     let root = (delta.root(2).saturating_sub(b)) / (U512::from(2) * a);
     println!(
-        "+a {} ({}) +b {} ({}) -c {} ({}) -> {} ({})",
+        "+a {} ({}) +b {} ({}) -c {} ({}) -> {} ",
         a,
         a.log2(),
         b,
@@ -70,7 +70,6 @@ pub fn quadratic_root(pos_a: U256, pos_b: U256, neg_c: U256) -> u128 {
         c,
         c.log2(),
         root,
-        root.log2()
     );
     root.saturating_to::<u128>()
 }
