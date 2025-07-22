@@ -275,7 +275,7 @@ async fn maineth(winner: &Match) -> Result<(), String> {
             "{} eth: {} delta {}",
             public_key,
             format_units(eth_balance_end, 18).unwrap(),
-            format_units(eth_balance_end - eth_balance_start, 18).unwrap()
+            format_units(eth_balance_start - eth_balance_end, 18).unwrap()
         );
         println!(
             "{} {}: {}",
