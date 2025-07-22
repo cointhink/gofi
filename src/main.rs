@@ -277,20 +277,38 @@ async fn maineth(winner: &Match) -> Result<(), String> {
             format_units(eth_balance_end, 18).unwrap(),
             format_units(eth_balance_start - eth_balance_end, 18).unwrap()
         );
+        let coin0_balance_end = coin0.balanceOf(public_key).call().await.unwrap();
         println!(
-            "{} {}: {}",
+            "{} {}: {} delta {}",
             public_key,
             winner.pair.pool0.pool.coin0.symbol,
-            Into::<f64>::into(coin0.balanceOf(public_key).call().await.unwrap())
-                / 10_f64.powi(winner.pair.pool0.pool.coin0.decimals),
+            format_units(
+                coin0_balance_end,
+                winner.pair.pool0.pool.coin0.decimals.to_string()
+            )
+            .unwrap(),
+            format_units(
+                coin0_balance_start - coin0_balance_end,
+                winner.pair.pool0.pool.coin0.decimals.to_string()
+            )
+            .unwrap()
         );
         erc20_allow(&public_key, uniswab.address(), &coin1).await;
+        let coin1_balance_end = coin1.balanceOf(public_key).call().await.unwrap();
         println!(
-            "{} {}: {}",
+            "{} {}: {} delta {}",
             public_key,
             winner.pair.pool0.pool.coin1.symbol,
-            Into::<f64>::into(coin1.balanceOf(public_key).call().await.unwrap())
-                / 10_f64.powi(winner.pair.pool0.pool.coin1.decimals),
+            format_units(
+                coin1_balance_end,
+                winner.pair.pool0.pool.coin1.decimals.to_string()
+            )
+            .unwrap(),
+            format_units(
+                coin1_balance_start - coin1_balance_end,
+                winner.pair.pool0.pool.coin1.decimals.to_string()
+            )
+            .unwrap()
         );
         Ok(())
     } else {
