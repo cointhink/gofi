@@ -23,7 +23,8 @@ fn main() {
         if a_price > b_price { "CHEAP" } else { "" },
     );
     let mid_price = ((b_price - a_price) / 2.0) + a_price;
-    println!("mid_price {mid_price}");
+    let price_diff = ((b_price / a_price) - 1.0) * 100.0;
+    println!("mid_price {mid_price} price_diff {price_diff:.2}%");
     let ay_in = if args.len() < 6 {
         unipool::optimal_ay_in(ax, ay, bx, by).unwrap()
     } else {
