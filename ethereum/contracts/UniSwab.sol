@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "v2-core-1.0.1/contracts/interfaces/IUniswapV2Pair.sol";
 import "openzeppelin-contracts-5.3.0/contracts/token/ERC20/ERC20.sol";
-import "console.sol";
 
 contract UniSwab {
     address public owner;
@@ -23,7 +22,6 @@ contract UniSwab {
     ) internal onlyOwner returns (uint256) {
         ERC20(pool.token1()).transferFrom(msg.sender, address(pool), amount1In);
         (uint112 reserve0, uint112 reserve1, ) = pool.getReserves();
-        console.log('sent %s post-send reserves %s %s', amount1In, reserve0, reserve1);
         uint256 amount0Out = getAmountOut(amount1In, reserve1, reserve0);
         pool.swap(amount0Out, 0, owner, new bytes(0));
         return amount0Out;
@@ -60,7 +58,7 @@ contract UniSwab {
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
         require(amountIn > 0, "GAO: INSUFFICIENT_INPUT_AMOUNT");
-        require(reserveIn > 0 && reserveOut > 0);
+        require(reserveIn > 0 && reserveOut > 0, "GAO: INSUFFICIENT_LIQUIDITY");
         uint256 amountInWithFee = amountIn * 997;
         uint256 numerator = amountInWithFee * reserveOut;
         uint256 denominator = (reserveIn * 1000) + amountInWithFee;
