@@ -1,0 +1,14 @@
+[project]
+name = "sepolia"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "edn-format>=0.7.5",
+    "web3>=7.12.1",
+]
+
+[tool.uv]
+python-preference = "only-system"
+
