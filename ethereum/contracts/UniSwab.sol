@@ -21,7 +21,7 @@ contract UniSwab {
         uint256 amount1In,
         IUniswapV2Pair pool
     ) internal onlyOwner returns (uint256) {
-        IERC20(pool.token1()).transferFrom(msg.sender, address(pool), amount1In);
+        IERC20(pool.token1()).safeTransferFrom(msg.sender, address(pool), amount1In);
         (uint112 reserve0, uint112 reserve1, ) = pool.getReserves();
         uint256 amount0Out = getAmountOut(amount1In, reserve1, reserve0);
         pool.swap(amount0Out, 0, owner, new bytes(0));
@@ -32,7 +32,7 @@ contract UniSwab {
         uint256 amount0In,
         IUniswapV2Pair pool
     ) internal onlyOwner returns (uint256) {
-        IERC20(pool.token0()).transferFrom(msg.sender, address(pool), amount0In);
+        IERC20(pool.token0()).safeTransferFrom(msg.sender, address(pool), amount0In);
         (uint112 reserve0, uint112 reserve1, ) = pool.getReserves();
         uint256 amount1Out = getAmountOut(amount0In, reserve0, reserve1);
         pool.swap(0, amount1Out, owner, new bytes(0));
