@@ -2,9 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "v2-core-1.0.1/contracts/interfaces/IUniswapV2Pair.sol";
-import "openzeppelin-contracts-5.3.0/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-contracts-5.3.0/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract UniSwab {
+    using SafeERC20 for IERC20;
     address public owner;
 
     constructor() {
@@ -20,7 +21,7 @@ contract UniSwab {
         uint256 amount1In,
         IUniswapV2Pair pool
     ) internal onlyOwner returns (uint256) {
-        ERC20(pool.token1()).transferFrom(msg.sender, address(pool), amount1In);
+        IERC20(pool.token1()).transferFrom(msg.sender, address(pool), amount1In);
         (uint112 reserve0, uint112 reserve1, ) = pool.getReserves();
         uint256 amount0Out = getAmountOut(amount1In, reserve1, reserve0);
         pool.swap(amount0Out, 0, owner, new bytes(0));
@@ -31,7 +32,7 @@ contract UniSwab {
         uint256 amount0In,
         IUniswapV2Pair pool
     ) internal onlyOwner returns (uint256) {
-        ERC20(pool.token0()).transferFrom(msg.sender, address(pool), amount0In);
+        IERC20(pool.token0()).transferFrom(msg.sender, address(pool), amount0In);
         (uint112 reserve0, uint112 reserve1, ) = pool.getReserves();
         uint256 amount1Out = getAmountOut(amount0In, reserve0, reserve1);
         pool.swap(0, amount1Out, owner, new bytes(0));
