@@ -44,9 +44,10 @@ fn main() -> Result<(), postgres::Error> {
     );
     let pairs = pairs_with(&mut db, &config.preferred_base_token)?;
     println!("{} pairs found", pairs.len());
-    let matches = simulate(&pairs);
+    let mut matches = simulate(&pairs);
+    matches.sort_by(|a, b| a.scaled_profit().partial_cmp(&b.scaled_profit()).unwrap());
     println!(
-        "{} pools make {} pairs and {} matches for {}",
+        "{} pools make {} pairs. {} matches for {}",
         pools_count,
         pairs.len(),
         matches.len(),
@@ -55,25 +56,6 @@ fn main() -> Result<(), postgres::Error> {
 
     for r#match in &matches {
         println!("{}", r#match.to_string());
-        let p1 = r#match.pair.pool0.price();
-        let p2 = r#match.pair.pool1.price();
-        println!(
-            "{} {} {} {} p1 {} (d{}/d{}) n{} p2 {} {} ",
-            r#match.pair.pool0.reserve.x,
-            r#match.pair.pool0.reserve.y,
-            r#match.pair.pool1.reserve.x,
-            r#match.pair.pool1.reserve.y,
-            p1,
-            r#match.pair.pool0.pool.coin0.decimals,
-            r#match.pair.pool0.pool.coin1.decimals,
-            r#match.pair.pool0.reserve.x / r#match.pair.pool0.reserve.y,
-            p2,
-            if p1 < p2 {
-                "POOL1 CHEAPER"
-            } else {
-                "POOL2 CHEAPER"
-            }
-        );
     }
 
     let limit = 0.02;
@@ -502,20 +484,12 @@ fn trade_simulate(pair: Pair) -> Result<Match, String> {
     let p1 = pair.pool0.price();
     let p2 = pair.pool1.price();
     println!(
-        "{}1 price@s0 {} ax {} ay {} k {}",
+        "{}1 price {} {}2 price {} {:.4}",
         if p1 < p2 { "P" } else { "p" },
         p1,
-        ax,
-        ay,
-        U256::from(ax) * U256::from(ay),
-    );
-    println!(
-        "{}2 price@s0 {} bx {} by {} k {}",
         if p1 > p2 { "P" } else { "p" },
         p2,
-        bx,
-        by,
-        U256::from(bx) * U256::from(by),
+        p1 / p2
     );
 
     // f(b) - f(a) == 0
