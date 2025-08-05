@@ -16,6 +16,7 @@ pub struct Config {
     pub uniswab: String,
     pub preferred_base_token: String,
     pub preferred_coin_token: String,
+    pub minimum_out: f64,
 }
 
 impl Config {

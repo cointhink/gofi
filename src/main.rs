@@ -58,14 +58,12 @@ fn main() -> Result<(), postgres::Error> {
         println!("{}", r#match.to_string());
     }
 
-    let limit = 0.02;
     let winners = matches
         .into_iter()
         .filter(|m| {
             let scaled_profit = m.scaled_profit();
             m.pair.pool0.pool.coin1.contract_address == config.preferred_coin_token
-                && scaled_profit > limit
-                && scaled_profit < 2.0
+                && scaled_profit > config.minimum_out
         })
         .collect::<Vec<Match>>();
 
@@ -75,7 +73,7 @@ fn main() -> Result<(), postgres::Error> {
             maineth(winner).unwrap();
         }
     } else {
-        println!("no winners over {}", limit);
+        println!("no winners over {}", config.minimum_out);
     }
 
     Ok(())
