@@ -53,29 +53,31 @@ fn main() -> Result<(), postgres::Error> {
     println!("{} pairs found", pairs.len());
     let mut matches = simulate(&pairs);
     matches.sort_by(|a, b| b.scaled_profit().partial_cmp(&a.scaled_profit()).unwrap());
+
+    let gas_price_wei = get_gas_price(&provider);
     println!(
-        "{} pools make {} pairs. {} matches for {}",
+        "{} pools make {} pairs. {} matches for {} gas {:.1}",
         pools_count,
         pairs.len(),
         matches.len(),
-        config.preferred_base_token
+        config.preferred_base_token,
+        decimal::scale(gas_price_wei, 10_u128.pow(9))
     );
 
     for r#match in matches.iter().take(5) {
         println!("{}", r#match.to_string());
     }
 
-    let gas_price_wei = get_gas_price(&provider);
     let gas_cost_wei = gas_price_wei * config.tx_gas as u128;
     let winners = matches
         .into_iter()
-        .filter(|m| approval(m, gas_cost_wei, &config.preferred_coin_token))
+        .filter(|mtch| approval(mtch, gas_cost_wei, &config.preferred_coin_token))
         .collect::<Vec<Match>>();
 
     if winners.len() > 0 {
         for winner in winners[0..1].into_iter() {
             println!("===========================================================");
-            maineth(winner, &provider, my_address).unwrap();
+            maineth(winner, &provider, gas_cost_wei, my_address).unwrap();
         }
     } else {
         println!("no winners over {}", config.minimum_out);
@@ -169,6 +171,7 @@ sol!(
 async fn maineth<T: Provider>(
     winner: &Match,
     provider: T,
+    gas_cost_wei: u128,
     public_key: Address,
 ) -> Result<(), String> {
     let config = config::CONFIG.get().unwrap();
@@ -259,7 +262,16 @@ async fn maineth<T: Provider>(
         "fresh p1: {} r0: {} r1: {} btime: {} {}",
         winner.pair.pool1.pool.contract_address, r10, r11, btime1, btime1_str
     );
-    println!("winner profit: {}", winner.scaled_profit());
+    let gas_cost_coin1 = unipool::get_y_out(
+        gas_cost_wei,
+        winner.pair.pool0.reserve.x,
+        winner.pair.pool0.reserve.y,
+    );
+    println!(
+        "winner profit: {} gas_coin1: {}",
+        winner.scaled_profit(),
+        gas_cost_coin1
+    );
     let fresh_pair = Pair {
         pool0: PoolSnapshot {
             pool: winner.pair.pool0.pool.clone(),
