@@ -64,18 +64,23 @@ fn main() -> Result<(), postgres::Error> {
         decimal::scale(gas_price_wei, 10_u128.pow(9))
     );
 
-    for r#match in matches.iter().take(5) {
+    let matches_preferred = matches
+        .iter()
+        .filter(|mtch| mtch.pair.pool0.pool.coin1.contract_address == config.preferred_coin_token)
+        .collect::<Vec<&Match>>();
+
+    for r#match in matches_preferred.iter().take(10) {
         println!("{}", r#match.to_string());
     }
 
     let gas_cost_wei = gas_price_wei * config.tx_gas as u128;
-    let winners = matches
+    let winners_profitable = matches_preferred
         .into_iter()
-        .filter(|mtch| approval(mtch, gas_cost_wei, &config.preferred_coin_token))
-        .collect::<Vec<Match>>();
+        .filter(|mtch| approval(mtch, gas_cost_wei))
+        .collect::<Vec<&Match>>();
 
-    if winners.len() > 0 {
-        for winner in winners[0..1].into_iter() {
+    if winners_profitable.len() > 0 {
+        for winner in winners_profitable[0..1].into_iter() {
             println!("===========================================================");
             maineth(winner, &provider, gas_cost_wei, my_address).unwrap();
         }
@@ -86,10 +91,10 @@ fn main() -> Result<(), postgres::Error> {
     Ok(())
 }
 
-fn approval(m: &Match, gas_cost_wei: u128, filter_token: &str) -> bool {
+fn approval(m: &Match, gas_cost_wei: u128) -> bool {
     let gas_cost_coin1 =
         unipool::get_y_out(gas_cost_wei, m.pair.pool0.reserve.x, m.pair.pool0.reserve.y);
-    m.pair.pool0.pool.coin1.contract_address == filter_token && m.profit() > gas_cost_coin1
+    m.profit() > gas_cost_coin1
 }
 
 #[cfg(test)]
@@ -110,40 +115,39 @@ fn test_approval() {
         pair: Pair {
             pool0: PoolSnapshot {
                 pool: Pool {
-                    contract_address: "POOL0".to_owned(),
+                    contract_address: "POOL-A0".to_owned(),
                     coin0: coin0.clone(),
                     coin1: coin1.clone(),
                 },
                 reserve: Reserve {
-                    contract_address: "POOL1".to_owned(),
-                    x: 50000,
-                    y: 4000,
+                    contract_address: "POOL-A1".to_owned(),
+                    x: 37407681086137164,
+                    y: 135629089,
                     block_number: 1,
                     block_timestamp: 1,
                 },
             },
             pool1: PoolSnapshot {
                 pool: Pool {
-                    contract_address: "POOL0".to_owned(),
+                    contract_address: "POOL-B0".to_owned(),
                     coin0: coin0.clone(),
                     coin1: coin1.clone(),
                 },
                 reserve: Reserve {
-                    contract_address: "POOL1".to_owned(),
-                    x: 50000,
-                    y: 4000,
+                    contract_address: "POOL-B1".to_owned(),
+                    x: 276578510416029,
+                    y: 1320886,
                     block_number: 1,
                     block_timestamp: 1,
                 },
             },
         },
-        pool0_ay_in: 1,
+        pool0_ay_in: 144457,
         pool0_ax_out: 1,
-        pool1_ay_out: 1,
+        pool1_ay_out: 165295, // profit 20838
     };
     let gas_cost_wei = 1;
-    let filter_token1 = "COIN1";
-    assert!(approval(&m, gas_cost_wei, filter_token1))
+    assert!(approval(&m, gas_cost_wei));
 }
 
 #[tokio::main]
