@@ -87,10 +87,6 @@ fn main() -> Result<(), postgres::Error> {
 fn approval(m: &Match, gas_cost_wei: u128, filter_token: &str) -> bool {
     let gas_cost_coin1 =
         unipool::get_y_out(gas_cost_wei, m.pair.pool0.reserve.x, m.pair.pool0.reserve.y);
-    println!(
-        "gas_cost_wei {} gas_cost_coin1 {}",
-        gas_cost_wei, gas_cost_coin1
-    );
     m.pair.pool0.pool.coin1.contract_address == filter_token && m.profit() > gas_cost_coin1
 }
 
@@ -538,7 +534,7 @@ fn simulate(pairs: &Vec<postgres::Row>) -> Vec<Match> {
         let pair = Pair::from_pair_row(&row);
         match trade_simulate(pair) {
             Ok(r#match) => matches.push(r#match),
-            Err(err) => println!("{}", err),
+            Err(_err) => (),
         }
     }
     matches
