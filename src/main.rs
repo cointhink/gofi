@@ -30,6 +30,13 @@ fn main() -> Result<(), postgres::Error> {
     tracing_subscriber::fmt::init();
 
     let config = config::CONFIG.get().unwrap();
+    let geth_url = Url::parse(&config.geth_url).unwrap();
+    let pk_signer: PrivateKeySigner = config.eth_priv_key.parse().unwrap();
+    let my_address = pk_signer.address();
+    let provider = ProviderBuilder::new()
+        .wallet(pk_signer)
+        .with_gas_estimation()
+        .connect_http(geth_url.clone());
     let mut db = Client::connect(&config.pg_url, NoTls)?;
     println!(
         "gofi config:{} eth:0x{}",
@@ -45,7 +52,7 @@ fn main() -> Result<(), postgres::Error> {
     let pairs = pairs_with(&mut db, &config.preferred_base_token)?;
     println!("{} pairs found", pairs.len());
     let mut matches = simulate(&pairs);
-    matches.sort_by(|a, b| a.scaled_profit().partial_cmp(&b.scaled_profit()).unwrap());
+    matches.sort_by(|a, b| b.scaled_profit().partial_cmp(&a.scaled_profit()).unwrap());
     println!(
         "{} pools make {} pairs. {} matches for {}",
         pools_count,
@@ -54,29 +61,96 @@ fn main() -> Result<(), postgres::Error> {
         config.preferred_base_token
     );
 
-    for r#match in &matches {
+    for r#match in matches.iter().take(5) {
         println!("{}", r#match.to_string());
     }
 
+    let gas_price_wei = get_gas_price(&provider);
+    let gas_cost_wei = gas_price_wei * config.tx_gas as u128;
     let winners = matches
         .into_iter()
-        .filter(|m| {
-            let scaled_profit = m.scaled_profit();
-            m.pair.pool0.pool.coin1.contract_address == config.preferred_coin_token
-                && scaled_profit > config.minimum_out
-        })
+        .filter(|m| approval(m, gas_cost_wei, &config.preferred_coin_token))
         .collect::<Vec<Match>>();
 
     if winners.len() > 0 {
         for winner in winners[0..1].into_iter() {
             println!("===========================================================");
-            maineth(winner).unwrap();
+            maineth(winner, &provider, my_address).unwrap();
         }
     } else {
         println!("no winners over {}", config.minimum_out);
     }
 
     Ok(())
+}
+
+fn approval(m: &Match, gas_cost_wei: u128, filter_token: &str) -> bool {
+    let gas_cost_coin1 =
+        unipool::get_y_out(gas_cost_wei, m.pair.pool0.reserve.x, m.pair.pool0.reserve.y);
+    println!(
+        "gas_cost_wei {} gas_cost_coin1 {}",
+        gas_cost_wei, gas_cost_coin1
+    );
+    m.pair.pool0.pool.coin1.contract_address == filter_token && m.profit() > gas_cost_coin1
+}
+
+#[cfg(test)]
+#[test]
+fn test_approval() {
+    // this much setup means refactoring is needed
+    let coin0 = Coin {
+        contract_address: "COIN0".to_owned(),
+        symbol: "C0".to_owned(),
+        decimals: 18,
+    };
+    let coin1 = Coin {
+        contract_address: "COIN1".to_owned(),
+        symbol: "C0".to_owned(),
+        decimals: 6,
+    };
+    let m = Match {
+        pair: Pair {
+            pool0: PoolSnapshot {
+                pool: Pool {
+                    contract_address: "POOL0".to_owned(),
+                    coin0: coin0.clone(),
+                    coin1: coin1.clone(),
+                },
+                reserve: Reserve {
+                    contract_address: "POOL1".to_owned(),
+                    x: 50000,
+                    y: 4000,
+                    block_number: 1,
+                    block_timestamp: 1,
+                },
+            },
+            pool1: PoolSnapshot {
+                pool: Pool {
+                    contract_address: "POOL0".to_owned(),
+                    coin0: coin0.clone(),
+                    coin1: coin1.clone(),
+                },
+                reserve: Reserve {
+                    contract_address: "POOL1".to_owned(),
+                    x: 50000,
+                    y: 4000,
+                    block_number: 1,
+                    block_timestamp: 1,
+                },
+            },
+        },
+        pool0_ay_in: 1,
+        pool0_ax_out: 1,
+        pool1_ay_out: 1,
+    };
+    let gas_cost_wei = 1;
+    let filter_token1 = "COIN1";
+    assert!(approval(&m, gas_cost_wei, filter_token1))
+}
+
+#[tokio::main]
+async fn get_gas_price<T: Provider>(provider: T) -> u128 {
+    provider.get_gas_price().await.unwrap()
 }
 
 sol!(
@@ -96,15 +170,12 @@ sol!(
 );
 
 #[tokio::main]
-async fn maineth(winner: &Match) -> Result<(), String> {
+async fn maineth<T: Provider>(
+    winner: &Match,
+    provider: T,
+    public_key: Address,
+) -> Result<(), String> {
     let config = config::CONFIG.get().unwrap();
-    let geth_url = Url::parse(&config.geth_url).unwrap();
-    let pk_signer: PrivateKeySigner = config.eth_priv_key.parse().unwrap();
-    let public_key = pk_signer.address();
-    let provider = ProviderBuilder::new()
-        .wallet(pk_signer)
-        .with_gas_estimation()
-        .connect_http(geth_url.clone());
     let uniswab = UniSwab::new(config.uniswab.parse().unwrap(), &provider);
     let coin0 = ERC20::new(
         winner
@@ -241,7 +312,7 @@ async fn maineth(winner: &Match) -> Result<(), String> {
             Address::from_slice(&decode(&winner.pair.pool1.pool.contract_address).unwrap()),
         );
         let swab_tx_receipt = swab_tx
-            .gas(250000)
+            .gas(config.tx_gas)
             .send()
             .await
             .unwrap()

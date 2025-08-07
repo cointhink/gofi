@@ -17,6 +17,7 @@ pub struct Config {
     pub preferred_base_token: String,
     pub preferred_coin_token: String,
     pub minimum_out: f64,
+    pub tx_gas: u64,
 }
 
 impl Config {
