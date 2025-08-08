@@ -570,14 +570,18 @@ fn trade_simulate(pair: Pair) -> Result<Match, String> {
     let by = pair.pool1.reserve.y;
     let p1 = pair.pool0.price();
     let p2 = pair.pool1.price();
-    println!(
-        "{}1 price {} {}2 price {} {:.4}",
-        if p1 < p2 { "P" } else { "p" },
-        p1,
-        if p1 > p2 { "P" } else { "p" },
-        p2,
-        p1 / p2
-    );
+    if p1 < p2 {
+        println!(
+            "{}1 price {} {}2 price {} ratio:{:.4} p0:{} p1:{}",
+            if p1 < p2 { "P" } else { "p" },
+            p1,
+            if p1 > p2 { "P" } else { "p" },
+            p2,
+            1.0 - (p1 / p2),
+            pair.pool0.pool.contract_address,
+            pair.pool1.pool.contract_address,
+        );
+    }
 
     // f(b) - f(a) == 0
     let oay_in = unipool::optimal_ay_in(ax, ay, bx, by)?;
