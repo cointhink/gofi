@@ -77,11 +77,11 @@ fn main() -> Result<(), postgres::Error> {
         })
         .collect::<Vec<&Match>>();
 
+    let gas_cost_wei = gas_price_wei * config.tx_gas as u128;
     for r#match in matches_preferred.iter().take(10) {
-        println!("{}", r#match.to_string());
+        println!("{}", r#match.to_string(gas_cost_wei));
     }
 
-    let gas_cost_wei = gas_price_wei * config.tx_gas as u128;
     let winners_profitable = matches_preferred
         .into_iter()
         .filter(|mtch| approval(mtch, gas_cost_wei))
@@ -234,7 +234,7 @@ async fn maineth<T: Provider>(
         Into::<f64>::into(coin1_balance_start) / 10_f64.powi(winner.pair.pool0.pool.coin1.decimals),
     );
 
-    println!("winner: {}", winner.to_string());
+    println!("winner: {}", winner.to_string(gas_cost_wei));
     println!(
         "winner p0: {} r0: {} r1: {} block: {} {}",
         winner.pair.pool0.pool.contract_address,
@@ -273,16 +273,6 @@ async fn maineth<T: Provider>(
     println!(
         "fresh p1: {} r0: {} r1: {} btime: {} {}",
         winner.pair.pool1.pool.contract_address, r10, r11, btime1, btime1_str
-    );
-    let gas_cost_coin1 = unipool::get_y_out(
-        gas_cost_wei,
-        winner.pair.pool0.reserve.x,
-        winner.pair.pool0.reserve.y,
-    );
-    println!(
-        "winner profit: {} gas_coin1: {}",
-        winner.scaled_profit(),
-        gas_cost_coin1
     );
     let fresh_pair = Pair {
         pool0: PoolSnapshot {
@@ -526,12 +516,18 @@ struct Match {
 }
 
 impl Match {
-    pub fn to_string(self: &Self) -> String {
+    pub fn to_string(self: &Self, gas_cost_wei: u128) -> String {
         format!(
-            "{:0.4}{} profit:{:0.4}{} p0:{} #{} p1:{} #{} ",
+            "{:0.4}{} profit:{:0.4}{} gas:{:0.4}{} p0:{} #{} p1:{} #{} ",
             self.pool0_ay_in as f64 / 10_f64.powi(self.pair.pool0.pool.coin1.decimals),
             self.pair.pool0.pool.coin1.symbol,
             self.scaled_profit(),
+            self.pair.pool0.pool.coin1.symbol,
+            unipool::get_y_out(
+                gas_cost_wei,
+                self.pair.pool0.reserve.x,
+                self.pair.pool0.reserve.y
+            ),
             self.pair.pool0.pool.coin1.symbol,
             self.pair.pool0.pool.contract_address,
             self.pair.pool0.reserve.block_time_str(),
