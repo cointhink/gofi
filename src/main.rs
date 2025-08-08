@@ -523,10 +523,13 @@ impl Match {
             self.pair.pool0.pool.coin1.symbol,
             self.scaled_profit(),
             self.pair.pool0.pool.coin1.symbol,
-            unipool::get_y_out(
-                gas_cost_wei,
-                self.pair.pool0.reserve.x,
-                self.pair.pool0.reserve.y
+            decimal::scale(
+                unipool::get_y_out(
+                    gas_cost_wei,
+                    self.pair.pool0.reserve.x,
+                    self.pair.pool0.reserve.y
+                ),
+                10_u128.pow(6)
             ),
             self.pair.pool0.pool.coin1.symbol,
             self.pair.pool0.pool.contract_address,
