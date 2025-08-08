@@ -66,7 +66,15 @@ fn main() -> Result<(), postgres::Error> {
 
     let matches_preferred = matches
         .iter()
-        .filter(|mtch| mtch.pair.pool0.pool.coin1.contract_address == config.preferred_coin_token)
+        .filter(|mtch| {
+            mtch.pair.pool0.pool.coin1.contract_address == config.preferred_coin_token
+                && !config
+                    .exclude_addresses
+                    .contains(&mtch.pair.pool0.pool.contract_address)
+                && !config
+                    .exclude_addresses
+                    .contains(&mtch.pair.pool1.pool.contract_address)
+        })
         .collect::<Vec<&Match>>();
 
     for r#match in matches_preferred.iter().take(10) {

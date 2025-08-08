@@ -18,6 +18,7 @@ pub struct Config {
     pub preferred_coin_token: String,
     pub minimum_out: f64,
     pub tx_gas: u64,
+    pub exclude_addresses: Vec<String>,
 }
 
 impl Config {
