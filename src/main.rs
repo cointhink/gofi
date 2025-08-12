@@ -23,25 +23,28 @@ macro_rules! sql_field {
     };
 }
 
-fn main() -> Result<(), postgres::Error> {
+fn init() {
     config::CONFIG
         .set(config::read_type(config::FILENAME))
         .unwrap();
     tracing_subscriber::fmt::init();
+}
+
+fn main() -> Result<(), postgres::Error> {
+    init();
 
     let config = config::CONFIG.get().unwrap();
-    let geth_url = Url::parse(&config.geth_url).unwrap();
     let pk_signer: PrivateKeySigner = config.eth_priv_key.parse().unwrap();
     let my_address = pk_signer.address();
     let provider = ProviderBuilder::new()
         .wallet(pk_signer)
         .with_gas_estimation()
-        .connect_http(geth_url.clone());
+        .connect_http(config.geth_url.parse::<Url>().unwrap());
     let mut db = Client::connect(&config.pg_url, NoTls)?;
     println!(
         "gofi config:{} eth:0x{}",
         config::FILENAME,
-        config.public_key()
+        config.public_key(),
     );
 
     let pools_count = rows_count(&mut db, "pools");
