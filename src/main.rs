@@ -370,7 +370,10 @@ async fn maineth<T: Provider>(
             )
             .unwrap()
         );
-        Ok(())
+        match swab_tx_receipt.status() {
+            true => Ok(()),
+            false => Err("eth tx failed".to_owned()),
+        }
     } else {
         Err("swap aborted. freshness check failed".to_owned())
     }
