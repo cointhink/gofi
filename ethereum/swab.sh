@@ -13,9 +13,9 @@ fi
 
 balances() {
 COIN=`eth contract:call erc20@usdona 'balanceOf("'${HAT2}'")'`
-echo USDONA for HAT2 = $COIN
+echo USDONA balanceOf HAT2 = $COIN
 COIN=`eth contract:call erc20@usdonc 'balanceOf("'${HAT2}'")'`
-echo USDONC for HAT2 = $COIN
+echo USDONC balanceOf HAT2 = $COIN
 }
 
 reserves() {
@@ -40,6 +40,7 @@ echo USDONC for pool1 = $COIN
 
 STARTC=`eth contract:call erc20@usdonc 'balanceOf("'${HAT2}'")'`
 balances
+reserves
 # SWAB!
 echo swab\(${AY_IN}, ${POOL0}, ${POOL1}\)
 eth contract:send --pk hat2 uniswab@${SWAB} 'swab('${AY_IN}', "'${POOL0}'", "'${POOL1}'")'

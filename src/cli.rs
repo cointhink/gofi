@@ -13,12 +13,12 @@ fn main() {
     let a_price = decimal::scale(ay, ax);
     let b_price = decimal::scale(by, bx);
     println!(
-        "pool 0 price {} {}",
+        "pool 0 price y/x {} {}",
         a_price,
         if a_price < b_price { "CHEAP" } else { "" },
     );
     println!(
-        "pool 1 price {} {}",
+        "pool 1 price y/x {} {}",
         b_price,
         if a_price > b_price { "CHEAP" } else { "" },
     );
