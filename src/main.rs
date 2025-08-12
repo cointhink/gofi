@@ -49,41 +49,49 @@ fn main() -> Result<(), postgres::Error> {
         "sql finding pairs from {} pools where token0 = {}",
         pools_count, &config.preferred_base_token
     );
-    let pairs = pairs_with(&mut db, &config.preferred_base_token)?;
-    println!("{} pairs found", pairs.len());
-    let mut matches = simulate(&pairs);
+    let pair_rows = pairs_with(&mut db, &config.preferred_base_token)?;
+    let pairs = pair_rows
+        .iter()
+        .map(|row| Pair::from_pair_row(&row))
+        .collect::<Vec<Pair>>();
+    let pairs_count = pairs.len();
+    let pairs_preferred = pairs
+        .into_iter()
+        .filter(|pair| {
+            pair.pool0.pool.coin1.contract_address == config.preferred_coin_token
+                && !config
+                    .exclude_addresses
+                    .contains(&pair.pool0.pool.contract_address)
+                && !config
+                    .exclude_addresses
+                    .contains(&pair.pool1.pool.contract_address)
+        })
+        .collect::<Vec<Pair>>();
+    println!(
+        "{} pairs found. filtered to {}",
+        pairs_count,
+        pairs_preferred.len()
+    );
+    let mut matches = simulate(pairs_preferred);
     matches.sort_by(|a, b| b.scaled_profit().partial_cmp(&a.scaled_profit()).unwrap());
 
     let gas_price_wei = get_gas_price(&provider);
     println!(
         "{} pools make {} pairs. {} matches for {} gas {:.1}",
         pools_count,
-        pairs.len(),
+        pairs_count,
         matches.len(),
         config.preferred_base_token,
         decimal::scale(gas_price_wei, 10_u128.pow(9))
     );
 
-    let matches_preferred = matches
-        .iter()
-        .filter(|mtch| {
-            mtch.pair.pool0.pool.coin1.contract_address == config.preferred_coin_token
-                && !config
-                    .exclude_addresses
-                    .contains(&mtch.pair.pool0.pool.contract_address)
-                && !config
-                    .exclude_addresses
-                    .contains(&mtch.pair.pool1.pool.contract_address)
-        })
-        .collect::<Vec<&Match>>();
-
     let gas_cost_wei = gas_price_wei * config.tx_gas as u128;
-    for r#match in matches_preferred.iter().take(10) {
+    for r#match in matches.iter().take(10) {
         println!("{}", r#match.to_string(gas_cost_wei));
     }
 
-    let winners_profitable = matches_preferred
-        .into_iter()
+    let winners_profitable = matches
+        .iter()
         .filter(|mtch| approval(mtch, gas_cost_wei))
         .collect::<Vec<&Match>>();
 
@@ -554,10 +562,9 @@ impl Match {
     }
 }
 
-fn simulate(pairs: &Vec<postgres::Row>) -> Vec<Match> {
+fn simulate(pairs: Vec<Pair>) -> Vec<Match> {
     let mut matches = vec![];
-    for row in pairs {
-        let pair = Pair::from_pair_row(&row);
+    for pair in pairs {
         match trade_simulate(pair) {
             Ok(r#match) => matches.push(r#match),
             Err(_err) => (),
