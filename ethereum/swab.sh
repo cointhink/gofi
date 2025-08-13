@@ -6,9 +6,11 @@ SWAB=$(cat logs/SWAB)
 
 if [[ -z "$1" ]];
 then
-AY_IN=40371
+AX_IN=40371
+AY_IN=0
 else
-AY_IN=$1
+AX_IN=$1
+AY_IN=$2
 fi
 
 balances() {
@@ -42,8 +44,8 @@ STARTC=`eth contract:call erc20@usdonc 'balanceOf("'${HAT2}'")'`
 balances
 reserves
 # SWAB!
-echo swab\(${AY_IN}, ${POOL0}, ${POOL1}\)
-eth contract:send --pk hat2 uniswab@${SWAB} 'swab('${AY_IN}', "'${POOL0}'", "'${POOL1}'")'
+echo swab\(${AX_IN}, ${AY_IN}, ${POOL0}, ${POOL1}\) $SWAB
+eth contract:send --pk hat2 swab@${SWAB} 'swab('${AX_IN}', '${AY_IN}', "'${POOL0}'", "'${POOL1}'")'
 balances
 reserves
 ENDC=`eth contract:call erc20@usdonc 'balanceOf("'${HAT2}'")'`

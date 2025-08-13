@@ -10,8 +10,6 @@ WETH=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/WETH9.bin | 
 echo WETH: ${WETH}
 echo ${WETH} > logs/WETH
 # ERC20 deploy
-USDONA1=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/UsDonA.bin | jq -r .address)
-echo USDONA1: ${USDONA1} '(ignored)'
 USDONA=$(eth contract:deploy -n hardhat --pk hat1  ./${artifacts_dir}/UsDonA.bin | jq -r .address)
 echo USDONA: ${USDONA}
 echo ${USDONA} > logs/USDONA
@@ -67,3 +65,4 @@ pool $3 $4 AC2
 
 poolparty 310000 210000 220000 320000 # prices 0.667, 1.454
 #poolparty 11053407444259431575 39896272204 96794408650081838290 354112185748
+#poolparty 62384007582644880 186502311 57381447185939488899 242296298304
